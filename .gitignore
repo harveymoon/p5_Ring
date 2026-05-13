@@ -1,0 +1,8 @@
+.pio/
+.vscode/
+*.bin
+*.uf2
+*.elf
+*.hex
+.DS_Store
+node_modules/

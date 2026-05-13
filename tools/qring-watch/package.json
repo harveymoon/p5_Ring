@@ -1,0 +1,17 @@
+{
+  "name": "qring-watch",
+  "version": "0.1.0",
+  "description": "Watch a folder and push sketch changes to a Q-Ring over USB Serial.",
+  "main": "index.js",
+  "bin": {
+    "qring-watch": "index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "serialport": "^12.0.0"
+  },
+  "license": "MIT"
+}

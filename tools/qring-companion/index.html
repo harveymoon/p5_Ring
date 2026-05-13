@@ -1,0 +1,1135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Q-Ring · companion</title>
+<style>
+  :root {
+    --bg: #0a0e14;
+    --bg-elev: #11161e;
+    --bg-input: #161c26;
+    --line: #1f2733;
+    --line-strong: #2a3340;
+    --ink: #e6edf3;
+    --ink-dim: #8a96a6;
+    --ink-faint: #5a6573;
+    --accent: #5ec8ff;
+    --accent-dim: #2a7aa6;
+    --warm: #ffb45e;
+    --bad:  #ff6b6b;
+    --good: #5dd39e;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: radial-gradient(ellipse at top, #0e141d 0%, #060809 100%);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+    font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 28px 32px 24px;
+  }
+  main { flex: 1 0 auto; }
+  footer { flex-shrink: 0; }
+
+  /* ---- Header ---- */
+  header { display: flex; align-items: center; gap: 14px; padding-bottom: 18px; }
+  .badge {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+    box-shadow: 0 0 28px rgba(94,200,255,0.25), inset 0 0 0 1px rgba(255,255,255,0.08);
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; color: #0a0e14;
+  }
+  .title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+  .subtitle { color: var(--ink-dim); font-size: 12.5px; }
+  .pill {
+    margin-left: auto; padding: 6px 12px; border-radius: 999px;
+    background: var(--bg-elev); border: 1px solid var(--line);
+    color: var(--ink-dim); font-size: 12.5px;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-faint); }
+  .pill.connected { color: var(--good); border-color: rgba(93,211,158,0.25); }
+  .pill.connected .dot { background: var(--good); box-shadow: 0 0 8px var(--good); }
+
+  /* ---- Tabs ---- */
+  .tabs {
+    display: flex; gap: 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .tab {
+    appearance: none; cursor: pointer;
+    background: transparent; color: var(--ink-dim);
+    border: 1px solid transparent; border-bottom: none;
+    border-top-left-radius: 8px; border-top-right-radius: 8px;
+    padding: 9px 16px; margin-bottom: -1px;
+    font: inherit; font-size: 13px; font-weight: 500;
+    transition: color 0.1s;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active {
+    color: var(--accent); background: var(--bg-elev);
+    border-color: var(--line); border-bottom-color: var(--bg-elev);
+  }
+  .tab-panel { display: none; padding-top: 22px; flex-direction: column; gap: 16px; min-height: 0; }
+  .tab-panel.active { display: flex; }
+
+  /* ---- Cards ---- */
+  main { display: flex; flex-direction: column; min-height: 0; }
+  .card {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .card-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 12px; gap: 12px; flex-wrap: wrap;
+  }
+  .card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-dim); }
+  .card-meta  { font-size: 11.5px; color: var(--ink-faint); font-family: var(--mono); }
+
+  .btn {
+    appearance: none; border: 1px solid var(--line-strong); cursor: pointer;
+    background: var(--bg-input); color: var(--ink);
+    padding: 8px 14px; border-radius: 8px; font: inherit; font-size: 13px;
+    transition: border-color 0.1s, background 0.1s;
+  }
+  .btn:hover { border-color: var(--accent-dim); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #0a0e14; font-weight: 600; }
+  .btn.primary:hover { background: #80d3ff; border-color: #80d3ff; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  select.btn { background: var(--bg-input); appearance: none; padding-right: 32px;
+    background-image: linear-gradient(45deg, transparent 50%, var(--ink-dim) 50%),
+                      linear-gradient(135deg, var(--ink-dim) 50%, transparent 50%);
+    background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+  }
+
+  .row2 {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  }
+  @media (max-width: 800px) { .row2 { grid-template-columns: 1fr; } }
+
+  /* Controls card */
+  .ctrl-row {
+    display: grid; grid-template-columns: 90px 1fr 56px;
+    gap: 12px; align-items: center; margin-top: 10px;
+  }
+  .ctrl-row:first-of-type { margin-top: 0; }
+  .ctrl-label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--ink-dim);
+  }
+  .face-btns { grid-column: 2 / span 2; }
+  .face-btns .btn { padding: 6px 10px; font-size: 12px; }
+  .face-btns .btn.selected {
+    background: var(--accent); color: #0a0e14; border-color: var(--accent); font-weight: 600;
+  }
+  .ctrl-readout {
+    text-align: right; font-family: var(--mono); font-size: 13px; color: var(--accent);
+  }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 4px;
+    background: var(--line-strong); border-radius: 2px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid #0a0e14;
+    box-shadow: 0 0 10px rgba(94,200,255,0.4);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid #0a0e14;
+  }
+  input[type=color] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 32px;
+    background: var(--bg-input); border: 1px solid var(--line-strong);
+    border-radius: 8px; cursor: pointer; padding: 4px;
+  }
+  input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+  input[type=color]::-webkit-color-swatch { border: none; border-radius: 4px; }
+  input[type=color]::-moz-color-swatch { border: none; border-radius: 4px; }
+  .ctrl-note {
+    margin-top: 12px; padding: 8px 10px;
+    background: var(--bg-input); border-radius: 6px;
+    color: var(--ink-faint); font-size: 11.5px;
+  }
+  .ctrl-note code { font-family: var(--mono); color: var(--ink-dim); }
+
+  /* Gated cards — dimmed + non-interactive until the device is connected. */
+  .gated { transition: opacity 0.2s, filter 0.2s; }
+  body:not(.connected) .gated {
+    opacity: 0.32;
+    filter: grayscale(0.4);
+    pointer-events: none;
+    user-select: none;
+  }
+  .gate-hint {
+    display: none;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(94,200,255,0.06);
+    border: 1px solid rgba(94,200,255,0.2);
+    color: var(--accent);
+    font-size: 12.5px;
+  }
+  body:not(.connected) .gate-hint { display: block; }
+
+  /* ---- Sketch card ---- */
+  .sketch-grid {
+    display: grid; grid-template-columns: 1fr 280px; gap: 16px;
+    margin-top: 12px;
+  }
+  @media (max-width: 800px) {
+    .sketch-grid { grid-template-columns: 1fr; }
+  }
+  .preview-box {
+    background: #060809; border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px; max-height: 380px; overflow-y: auto;
+    font-family: var(--mono); font-size: 12px; line-height: 1.55;
+    color: var(--ink);
+  }
+  .preview-box pre { margin: 0; white-space: pre; background: transparent; }
+  .preview-box code { font-family: inherit; background: transparent; padding: 0; border: 0; color: inherit; }
+  .preview-empty { color: var(--ink-faint); font-style: italic; padding: 4px 0; }
+
+  /* Prism token colors — palette-matched, no Prism theme CSS needed. */
+  .preview-box .token.comment,
+  .preview-box .token.prolog,
+  .preview-box .token.doctype,
+  .preview-box .token.cdata        { color: var(--ink-faint); font-style: italic; }
+  .preview-box .token.punctuation  { color: var(--ink-dim); }
+  .preview-box .token.property,
+  .preview-box .token.tag,
+  .preview-box .token.constant,
+  .preview-box .token.symbol,
+  .preview-box .token.deleted      { color: #ff9bb3; }
+  .preview-box .token.boolean,
+  .preview-box .token.number       { color: var(--warm); }
+  .preview-box .token.selector,
+  .preview-box .token.attr-name,
+  .preview-box .token.string,
+  .preview-box .token.char,
+  .preview-box .token.builtin,
+  .preview-box .token.inserted     { color: var(--good); }
+  .preview-box .token.operator,
+  .preview-box .token.entity,
+  .preview-box .token.url          { color: var(--ink-dim); }
+  .preview-box .token.atrule,
+  .preview-box .token.attr-value,
+  .preview-box .token.keyword      { color: var(--accent); }
+  .preview-box .token.function,
+  .preview-box .token.class-name   { color: #d4b1ff; }
+  .preview-box .token.regex,
+  .preview-box .token.important,
+  .preview-box .token.variable     { color: var(--warm); }
+  .preview-box .token.important,
+  .preview-box .token.bold         { font-weight: bold; }
+  .preview-box .token.italic       { font-style: italic; }
+
+  .canvas-frame {
+    background: var(--bg-input); border: 1px solid var(--line);
+    border-radius: 8px; padding: 12px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .canvas-host {
+    width: 240px; height: 240px; margin: 0 auto;
+    border-radius: 50%; overflow: hidden;
+    background: #000; border: 1px solid var(--line-strong);
+    box-shadow: 0 0 24px rgba(94,200,255,0.10), inset 0 0 0 4px #06080a;
+    position: relative;
+  }
+  .canvas-host canvas { display: block; }
+  .canvas-host .canvas-empty {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    color: var(--ink-faint); font-size: 12px; text-align: center; padding: 16px;
+  }
+  .preview-label {
+    font-size: 11px; color: var(--ink-faint); text-align: center;
+    font-family: var(--mono);
+  }
+
+  .lint {
+    margin-top: 12px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .lint-row {
+    display: flex; gap: 8px; align-items: flex-start;
+    font-size: 12.5px; line-height: 1.5;
+  }
+  .lint-row .tag {
+    font-family: var(--mono); font-size: 10px;
+    padding: 1px 6px; border-radius: 4px; flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .lint-row.ok  .tag { background: rgba(93,211,158,0.12); color: var(--good); }
+  .lint-row.warn .tag { background: rgba(255,180,94,0.12); color: var(--warm); }
+  .lint-row.err .tag { background: rgba(255,107,107,0.12); color: var(--bad); }
+  .lint-row .msg { color: var(--ink); }
+  .lint-row.warn .msg { color: var(--ink); }
+  .lint-row.err .msg { color: var(--ink); }
+
+  /* ---- Log ---- */
+  .log-card { display: flex; flex-direction: column; min-height: 240px; max-height: 40vh; }
+  .log {
+    flex: 1; overflow-y: auto;
+    background: #060809; border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 14px;
+    font-family: var(--mono); font-size: 12px; line-height: 1.55;
+    color: var(--ink-dim);
+  }
+  .log .line { white-space: pre-wrap; word-break: break-word; }
+  .log .ts { color: var(--ink-faint); margin-right: 12px; }
+  .log .line.tx { color: var(--accent); }
+  .log .line.evt { color: var(--warm); }
+  .log .line.err { color: var(--bad); }
+  .log .line.ok  { color: var(--good); }
+
+  .cmd-row { display: flex; gap: 8px; margin-top: 10px; }
+  .cmd-row input {
+    flex: 1; background: var(--bg-input); border: 1px solid var(--line-strong);
+    color: var(--ink); border-radius: 8px; padding: 9px 12px;
+    font-family: var(--mono); font-size: 13px;
+  }
+  .cmd-row input:focus { outline: none; border-color: var(--accent-dim); }
+
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    margin-top: 8px;
+  }
+  .stat { padding: 10px; border-radius: 8px; background: var(--bg-input); border: 1px solid var(--line); }
+  .stat .v { font-size: 18px; font-weight: 600; font-family: var(--mono); }
+  .stat .k { font-size: 10.5px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+
+  footer {
+    color: var(--ink-faint); font-size: 11.5px; padding-top: 20px;
+    border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 12px; margin-top: 16px;
+  }
+  footer a { color: var(--ink-dim); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+
+  /* ---- Help ---- */
+  .help h2 { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: 0.01em; }
+  .help h3 { margin: 18px 0 6px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-dim); }
+  .help p { margin: 0 0 12px; color: var(--ink); }
+  .help ul { margin: 0 0 12px; padding-left: 20px; color: var(--ink); }
+  .help li { margin-bottom: 4px; }
+  .help code, .help pre {
+    font-family: var(--mono); font-size: 12px;
+    background: var(--bg-input); border: 1px solid var(--line);
+    padding: 1px 5px; border-radius: 4px; color: var(--ink);
+  }
+  .help pre {
+    display: block; padding: 12px 14px; margin: 8px 0 16px;
+    white-space: pre; overflow-x: auto;
+    line-height: 1.5;
+  }
+  .help-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .help-grid { grid-template-columns: 1fr; } }
+
+  .banner {
+    margin-bottom: 16px; padding: 12px 14px; border-radius: 10px;
+    background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.25);
+    color: var(--bad); font-size: 13px;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.js" defer></script>
+</head>
+<body>
+
+<header>
+  <div class="badge">Q</div>
+  <div>
+    <div class="title">Q-Ring companion</div>
+    <div class="subtitle">load a sketch, preview, push to device</div>
+  </div>
+  <div class="pill" id="dev-pill"><span class="dot"></span><span id="dev-status">not connected</span></div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="workspace">Workspace</button>
+  <button class="tab" data-tab="help">Help</button>
+</nav>
+
+<main>
+  <!-- =================== WORKSPACE =================== -->
+  <div class="tab-panel active" id="tab-workspace">
+    <div id="capability-banner" class="banner" style="display:none"></div>
+
+    <!-- Device (always on top, always interactive — the gate) -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Device</div>
+        <div class="card-meta" id="device-meta">—</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" id="connect">Connect Q-Ring…</button>
+        <button class="btn" id="disconnect" disabled>Disconnect</button>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><div class="v" id="stat-uploads">0</div><div class="k">uploads</div></div>
+        <div class="stat"><div class="v" id="stat-errors">0</div><div class="k">errors</div></div>
+        <div class="stat"><div class="v" id="stat-bytes">0</div><div class="k">last bytes</div></div>
+      </div>
+      <div class="gate-hint">Plug Q-Ring into a USB-C port and connect to unlock the sketch + log panes.</div>
+    </div>
+
+    <!-- Device controls — gated. Face state + brightness, applies + persists on device. -->
+    <div class="card gated">
+      <div class="card-head">
+        <div class="card-title">Controls</div>
+        <div class="card-meta">applies immediately · saved across boots</div>
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Face</div>
+        <div class="btn-row face-btns" id="face-btns"></div>
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Brightness</div>
+        <input type="range" id="brightness" min="0" max="100" value="80" />
+        <div class="ctrl-readout" id="brightness-val">80</div>
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Color</div>
+        <input type="color" id="accent" value="#00c8ff" />
+        <div class="ctrl-readout" id="accent-val">#00C8FF</div>
+      </div>
+      <div class="ctrl-note">Face state, brightness, and color all apply to the fallback face. The color is also exposed to sketches as <code>themeR</code> / <code>themeG</code> / <code>themeB</code>. All three settings persist to <code>/sketches/.settings</code>.</div>
+    </div>
+
+    <!-- Sketch — gated -->
+    <div class="card gated">
+      <div class="card-head">
+        <div class="card-title">Sketch</div>
+        <div class="card-meta" id="sketch-meta">nothing loaded</div>
+      </div>
+      <div class="btn-row">
+        <select id="examples-select" class="btn" title="load a built-in example">
+          <option value="">Examples…</option>
+        </select>
+        <button class="btn" id="pick-sketch">Pick sketch file…</button>
+        <button class="btn primary" id="push-now" disabled>Push to device</button>
+      </div>
+      <div class="sketch-grid">
+        <div>
+          <div class="preview-box" id="preview-box">
+            <div class="preview-empty">load an example or pick a sketch file to begin.</div>
+          </div>
+          <div class="lint" id="lint"></div>
+        </div>
+        <div class="canvas-frame">
+          <div class="canvas-host" id="canvas-host">
+            <div class="canvas-empty" id="canvas-empty">preview will appear here<br>once a sketch is loaded</div>
+          </div>
+          <div class="preview-label">browser preview · 240 × 240</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live log — gated -->
+    <div class="card log-card gated">
+      <div class="card-head">
+        <div class="card-title">Live log</div>
+        <div class="btn-row"><button class="btn" id="log-clear">Clear</button></div>
+      </div>
+      <div class="log" id="log"><div class="line"><span class="ts">--:--:--</span>idle. connect the device + load a sketch.</div></div>
+      <div class="cmd-row">
+        <input id="cmd" placeholder="serial command — sketch info, happy, rotate auto, …" autocomplete="off" />
+        <button class="btn" id="cmd-send" disabled>Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== HELP =================== -->
+  <div class="tab-panel help" id="tab-help">
+    <div class="card">
+      <h2>Getting started</h2>
+      <p>Plug Q-Ring into a USB-C port. Then:</p>
+      <ul>
+        <li><strong>Load a sketch</strong> — pick an example from the dropdown, or open any <code>.js</code> file from your computer.</li>
+        <li><strong>Connect Q-Ring</strong> — pick the device in the browser dialog.</li>
+        <li><strong>Push to device</strong> — sends the sketch over USB Serial. If you picked a file, it also auto-pushes whenever you save.</li>
+      </ul>
+      <p>The browser shows a live preview at the same 240 × 240 resolution as the device, plus a quick check of anything that might not run on the on-device JS engine.</p>
+    </div>
+
+    <div class="help-grid">
+      <div class="card">
+        <h2>What you can draw</h2>
+        <h3>Shapes</h3>
+        <p><code>background</code>, <code>fill</code>, <code>stroke</code>, <code>noFill</code>, <code>noStroke</code>, <code>strokeWeight</code></p>
+        <p><code>line</code>, <code>rect</code>, <code>circle</code>, <code>ellipse</code>, <code>triangle</code>, <code>point</code>, <code>arc</code></p>
+        <p><code>text</code>, <code>textSize</code>, <code>textAlign(LEFT | CENTER | RIGHT)</code></p>
+        <h3>Transforms</h3>
+        <p><code>translate</code>, <code>rotate</code>, <code>scale</code>, <code>push</code>, <code>pop</code> (stack depth 8)</p>
+        <p>Helper: <code>centerOrigin()</code> moves the origin to <code>(width/2, height/2)</code>.</p>
+        <h3>Math</h3>
+        <p><code>random</code>, <code>noise</code> (Perlin), <code>map</code>, <code>lerp</code>, <code>dist</code>, <code>constrain</code>, <code>radians</code>, <code>degrees</code></p>
+        <p><code>sin</code>, <code>cos</code>, <code>tan</code>, <code>atan2</code>, <code>sqrt</code>, <code>pow</code>, <code>abs</code>, <code>floor</code>, <code>ceil</code>, <code>round</code>, <code>min</code>, <code>max</code></p>
+        <p>Constants: <code>PI</code>, <code>TWO_PI</code>, <code>HALF_PI</code></p>
+      </div>
+
+      <div class="card">
+        <h2>Globals you can read</h2>
+        <ul>
+          <li><code>width</code>, <code>height</code> — both 240</li>
+          <li><code>frameCount</code> — increments every drawn frame</li>
+          <li><code>millis()</code> — ms since boot</li>
+          <li><code>accelX</code>, <code>accelY</code>, <code>accelZ</code> — onboard accelerometer in <em>g</em></li>
+          <li><code>themeR</code>, <code>themeG</code>, <code>themeB</code> — the user's picked accent color (0–255 each). Use in <code>fill(themeR, themeG, themeB)</code> to theme with the device.</li>
+        </ul>
+
+        <h2>Rotation behavior</h2>
+        <p>Sketches stay <strong>upright by default</strong>. To make a sketch gravity-aware (canvas turns with the device so "up" stays up), call <code>autoRotate()</code> in <code>setup()</code>. The built-in <code>tilt</code> example demonstrates this.</p>
+
+        <h2>Display shape</h2>
+        <p>The LCD is <strong>round</strong>. The 240×240 corners are invisible. Keep important content within ~110 px of <code>(120, 120)</code>.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Hello world</h2>
+      <pre>function setup() {}
+
+function draw() {
+  background(0);
+  fill(0, 200, 255);
+  circle(width / 2, height / 2 + sin(frameCount * 0.05) * 30, 80);
+}</pre>
+      <p>Paste this into any <code>.js</code> file, open it with "Pick sketch file…", and the preview will animate.</p>
+    </div>
+
+    <div class="help-grid">
+      <div class="card">
+        <h2>JS dialect quirks</h2>
+        <p>The on-device engine is <strong>mJS</strong>, a tiny strict subset of JavaScript. Versus p5 web:</p>
+        <ul>
+          <li>Use <code>let</code> (not <code>var</code>). <code>var</code> is auto-rewritten on load, but <code>const</code> is not supported.</li>
+          <li>No arrow functions — write <code>function (x) { return x*2 }</code>.</li>
+          <li>No classes; use object literals + functions.</li>
+          <li>No template literals (<code>`like ${this}`</code>) — concatenate with <code>+</code>.</li>
+          <li>No regex, no Promise, no async/await.</li>
+          <li><strong>Numbers in <code>+</code> need an explicit <code>str()</code> cast.</strong> Write <code>"frame " + str(frameCount)</code>, not <code>"frame " + frameCount</code>.</li>
+        </ul>
+        <p>The companion's lint catches these before you push.</p>
+      </div>
+
+      <div class="card">
+        <h2>Performance & errors</h2>
+        <ul>
+          <li>Aim for under ~300 shapes per frame.</li>
+          <li>Pre-allocate arrays in <code>setup()</code>, not in <code>draw()</code>.</li>
+          <li>Alpha is approximated by blending against the last <code>background()</code> color — layered translucency does not stack.</li>
+          <li><code>strokeWeight</code> is clamped to 8.</li>
+        </ul>
+        <p>If a sketch crashes or stalls, the device flashes a red overlay for 3 seconds, persists the error to <code>/sketches/.errors/last.log</code>, and falls back to its built-in animated face. It won't get bricked.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Troubleshooting</h2>
+      <ul>
+        <li><strong>"Device not recognized" or no port listed</strong> — unplug and replug. Windows occasionally caches a bad descriptor.</li>
+        <li><strong>Companion can't find the port</strong> — close any terminal that's holding it, then click "Connect Q-Ring".</li>
+        <li><strong>Sketch shows nothing / wrong colors</strong> — check the Live log for <code>[VM] ERROR</code> lines. The most recent error is also on the device at <code>/sketches/.errors/last.log</code>.</li>
+      </ul>
+
+    </div>
+
+    <div class="card">
+      <h2>Serial commands</h2>
+      <p>Anything you can type into the <strong>cmd</strong> box at the bottom of the Live log. Commands are case-sensitive and terminated by Enter (the companion adds the newline for you). Output lines come back over the same Serial port and show up in the log.</p>
+
+      <h3>Sketch runner</h3>
+      <ul>
+        <li><code>sketch info</code> — print current runner state in one line:
+          <br><code>[INFO] active=1 error=0 crc=0x… heap_free=83000</code>.
+          If <code>error=1</code>, a second line <code>[INFO] last_error: …</code> follows.</li>
+        <li><code>sketch list</code> — enumerate built-in examples on the device.
+          Prints <code>[LIST] examples/&lt;name&gt;.js &lt;size&gt;</code> per file, then <code>[LIST] end</code>.</li>
+        <li><code>sketch use &lt;name&gt;</code> — copy a built-in example over
+          <code>/sketches/current.js</code> and reload. Argument is just the filename
+          (e.g. <code>sketch use clock.js</code>), or pass an absolute path to load
+          from anywhere on the FS.</li>
+        <li><code>sketch reload</code> — re-read <code>current.js</code> from flash
+          and run <code>setup()</code> + <code>draw()</code> again. Useful if a
+          previous error was cleared.</li>
+        <li><code>sketch off</code> — disable the JS runner and switch to the
+          fallback animated face.</li>
+        <li><code>sketch on</code> — re-enable the JS runner (also clears any
+          watchdog/parse error state so a broken sketch can retry).</li>
+        <li><code>eject</code> — alias for <code>sketch reload</code> (kept from
+          the early FatFSUSB design).</li>
+        <li><code>clean</code> — no-op in this firmware build; reserved for future
+          host-OS dotfile cleanup.</li>
+      </ul>
+
+      <h3>Display + face fallback</h3>
+      <p>These work whenever the fallback face is active. They <em>also</em> work while a sketch is running, but most are harmless overlays.</p>
+      <ul>
+        <li><code>happy</code> · <code>sad</code> · <code>thinking</code> ·
+          <code>listening</code> · <code>surprised</code> · <code>sleeping</code> ·
+          <code>speaking</code> · <code>angry</code> · <code>idle</code> ·
+          <code>calibrate</code> — force a face state. Replies with
+          <code>[FACE] State -&gt; &lt;name&gt;</code>.
+          <em>calibrate</em> turns the face into an IMU debug overlay
+          (gravity arrow + ax/ay readout).</li>
+        <li><code>alert &lt;message&gt;</code> — show a 5 s overlay banner.
+          Append <code>|ms</code> to override duration:
+          <code>alert hi|10000</code>. Long messages are truncated.</li>
+        <li><code>bright &lt;0-100&gt;</code> — set LCD backlight via PWM.
+          The RP2040 backlight driver hardcodes the PWM wrap at 100, so values
+          above 100 saturate. <code>0</code> = off, <code>100</code> = full.</li>
+        <li><code>color &lt;RRGGBB&gt;</code> — set the face accent color
+          (iris, brow, mouth, alert chrome). Hex, optionally prefixed with
+          <code>#</code>. Example: <code>color FFA500</code> for orange. Also
+          exposed to sketches as <code>themeR</code> / <code>themeG</code> /
+          <code>themeB</code> (0–255 each).</li>
+      </ul>
+      <p>Canvas rotation is no longer a Serial command — sketches own it via <code>autoRotate()</code>/<code>noAutoRotate()</code> in JS. The fallback face <strong>always</strong> auto-rotates regardless of what the last sketch left configured.</p>
+
+      <h3>Persistence</h3>
+      <p><code>bright</code>, <code>color</code>, and any face-state command write <code>/sketches/.settings</code> on the device (a tiny key=value text file). Next boot, the device restores the last brightness, color, and face state automatically.</p>
+
+      <h3>UPLOAD protocol (advanced)</h3>
+      <p>The companion uses this internally — you usually don't need to type it. Useful for scripting your own pushes from a terminal or other tool.</p>
+      <pre>UPLOAD &lt;path&gt; &lt;byte-count&gt;\n
+&lt;raw bytes — exactly byte-count of them&gt;
+\nEND\n</pre>
+      <ul>
+        <li><code>&lt;path&gt;</code> is the on-device path; for sketches use
+          <code>/sketches/current.js</code>. Subdirectories are created if missing.</li>
+        <li>Replies with <code>[UPLOAD] OK &lt;n&gt; bytes -&gt; &lt;path&gt;</code>
+          on success, or <code>[UPLOAD] FAIL …</code> on FS error. After a
+          successful write to <code>SKETCH_PATH</code> the device queues a
+          reload automatically.</li>
+        <li>The byte-count is mandatory and the body is raw — no escaping —
+          so the host has to know the file length in advance.</li>
+      </ul>
+
+      <h3>Output line prefixes</h3>
+      <p>Every line the firmware emits is tagged so the log is filterable. The companion uses these for the colored log:</p>
+      <ul>
+        <li><code>[Q-RING]</code> — boot + lifecycle events</li>
+        <li><code>[LOADER]</code> — filesystem init, default seeding</li>
+        <li><code>[FACE]</code> — face state transitions, alerts</li>
+        <li><code>[IMU]</code> — accel reads, rotation transitions</li>
+        <li><code>[VM]</code> — JS engine: load, errors, watchdog</li>
+        <li><code>[CMD]</code> — replies to your serial commands</li>
+        <li><code>[INFO]</code> — replies to <code>sketch info</code></li>
+        <li><code>[LIST]</code> — replies to <code>sketch list</code></li>
+        <li><code>[UPLOAD]</code> — UPLOAD protocol state</li>
+      </ul>
+
+      <h3>Tips</h3>
+      <ul>
+        <li>The line input above the log is a real raw stream — anything you
+          type is sent verbatim. So you can paste short test snippets directly
+          (e.g. <code>sketch use sensors.js</code>).</li>
+        <li>To diagnose a stuck sketch, send <code>sketch info</code> — if
+          <code>error=1</code> the device has bailed out of the sketch and is
+          showing the fallback face. <code>sketch on</code> retries.</li>
+        <li>To recover from a sketch that's pegging the watchdog: connect,
+          send <code>sketch off</code>, then use the Examples dropdown to load
+          something lighter.</li>
+        <li><code>bright 0</code> followed by <code>bright 255</code> is a
+          quick visual confirmation that Serial is reaching the device.</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span>Q-Ring · made with love</span>
+  <span>WebSerial + File System Access · use Chrome or Edge</span>
+</footer>
+
+<!-- =============== EXAMPLES (baked, same source as device) =============== -->
+<script id="examples-data" type="application/json">
+{
+  "shapes": "// shapes.js — pure-drawing demo\n//\n// Shows off all the primitives + nested transforms (push/pop, rotate).\n// No sensor input, no autoRotate — the artwork stays put no matter how\n// you hold the device. A good template if you want to design a fixed\n// composition that doesn't react to tilt.\n\nfunction setup() {\n  // Nothing to set up — defaults are fine (width=height=240, no fill alpha).\n}\n\nfunction draw() {\n  // Repaint each frame so we don't accumulate trails.\n  background(10, 8, 22);\n\n  // Save the current transform, then move the origin to the canvas center.\n  // After this point, (0,0) means \"middle of the screen\".\n  push();\n  translate(120, 120);\n\n  // A slowly-advancing time variable used to drive rotations.\n  let t = frameCount * 0.012;\n\n  // Outer ring — stroke only (noFill), 1 px wide cyan circle, 200 px wide.\n  noFill();\n  stroke(80, 160, 220, 180);   // 4th arg is alpha (approximated on device)\n  strokeWeight(1);\n  circle(0, 0, 200);\n\n  // Petals: 8 ellipses arranged in a ring, each rotated 45° from the last.\n  // Each iteration we push/rotate/draw/pop so the rotation doesn't carry\n  // over to the next iteration.\n  for (let i = 0; i < 8; i++) {\n    push();\n    rotate(t + i * (PI / 4));               // 8 evenly spaced angles\n    noStroke();\n    fill(120 + i * 14, 100 + i * 16, 220);  // gradient blue-purple\n    ellipse(0, -60, 30, 60);                // petal: 30 wide, 60 tall, 60 px out\n    pop();\n  }\n\n  // Counter-rotating ring of 6 triangles, spinning the other way.\n  for (let i = 0; i < 6; i++) {\n    push();\n    rotate(-t * 1.5 + i * (PI / 3));\n    fill(255, 180, 80);\n    noStroke();\n    triangle(0, -36, -8, -22, 8, -22);      // small upward triangle\n    pop();\n  }\n\n  // Center triangle, spinning faster than the others.\n  push();\n  rotate(t * 2.2);\n  fill(255, 220, 100);\n  noStroke();\n  triangle(0, -16, -14, 10, 14, 10);\n  pop();\n\n  // Four tiny white dots at the cardinal directions (top/right/bottom/left).\n  noStroke();\n  fill(220, 240, 255);\n  for (let i = 0; i < 4; i++) {\n    push();\n    rotate(i * HALF_PI);   // 0, 90, 180, 270 degrees\n    circle(0, -88, 4);     // dot 88 px from center\n    pop();\n  }\n\n  // Restore the original (un-translated) transform.\n  pop();\n}\n",
+  "tilt": "// tilt.js — auto-rotate demo\n//\n// By default Q-Ring sketches stay put when you tilt the device — handy\n// for fixed compositions. Calling autoRotate() in setup() opts in to\n// gravity-aware behavior: the canvas turns so \"up\" on the artwork always\n// matches real-world up.\n//\n// Try tilting the device while this is running — the triangle keeps\n// pointing skyward.\n\nfunction setup() {\n  // Tell the firmware to rotate the canvas based on the accelerometer.\n  // (Once enabled, it stays on until you call noAutoRotate() or load\n  // another sketch.)\n  autoRotate();\n}\n\nfunction draw() {\n  background(8, 8, 24);\n\n  // Move origin to center, then draw an upward-pointing triangle.\n  push();\n  translate(120, 120);\n\n  noStroke();\n  fill(255, 200, 80);                  // bright yellow outer triangle\n  triangle(0, -60, -40, 40, 40, 40);\n\n  // Inner shadow triangle to suggest depth.\n  fill(20, 8, 8);\n  triangle(0, -50, -28, 32, 28, 32);\n\n  pop();\n\n  // Label so it's obvious which way the artwork is pointing.\n  fill(220, 240, 255);\n  textSize(8);\n  textAlign(CENTER);\n  text(\"UP\", 120, 80);\n}\n",
+  "sensors": "// sensors.js — feature showcase\n//\n// Demonstrates: drawing primitives, transforms (push/pop/translate), text,\n// accelerometer readouts, and live frameCount. Tilt the device while it\n// runs — the arrow tracks gravity and the numbers update in real time.\n//\n// Note: this sketch does NOT call autoRotate(), so the canvas stays\n// pinned upright on screen. The arrow alone moves to show direction.\n\nfunction setup() {}\n\nfunction draw() {\n  background(8, 10, 18);\n\n  // Light-blue crosshair — visual reference for the center of the screen.\n  stroke(40, 80, 110);\n  strokeWeight(1);\n  line(0, 120, 240, 120);   // horizontal\n  line(120, 0, 120, 240);   // vertical\n\n  // ─── tilt arrow ───\n  // Move origin to center so positive accelX = right, positive accelY = down.\n  push();\n  translate(width / 2, height / 2);\n  let ax = accelX * 70;             // scale up by 70 for visibility\n  let ay = accelY * 70;\n  stroke(255, 200, 80);\n  strokeWeight(3);\n  line(0, 0, ax, ay);               // shaft of the arrow\n  noStroke();\n  fill(255, 220, 130);\n  circle(ax, ay, 12);               // arrowhead (just a dot for simplicity)\n  fill(255);\n  circle(ax + 3, ay - 3, 4);        // tiny highlight to give it shape\n  pop();\n\n  // ─── orbit of small dots ───\n  // Six dots evenly spaced around a circle, all rotating together.\n  push();\n  translate(width / 2, height / 2);\n  noStroke();\n  for (let i = 0; i < 6; i++) {\n    let a = frameCount * 0.03 + i * 1.0472;   // 1.0472 ≈ 60°\n    fill(80 + i * 25, 200, 255);              // gradient blue\n    circle(cos(a) * 95, sin(a) * 95, 7);\n  }\n  pop();\n\n  // ─── live readout text ───\n  // mJS forbids \"string + number\" implicit concatenation, so wrap each\n  // number with str(). round(x*100)/100 gives 2-decimal display.\n  fill(220, 230, 240);\n  textSize(8);\n  textAlign(LEFT);\n  text(\"accelX \" + str(round(accelX * 100) / 100), 70, 38);\n  text(\"accelY \" + str(round(accelY * 100) / 100), 70, 50);\n  text(\"accelZ \" + str(round(accelZ * 100) / 100), 70, 62);\n\n  textAlign(CENTER);\n  text(\"frame \" + str(frameCount), 120, 205);\n}\n",
+  "rain": "// rain.js — particle system, gravity-aware\n//\n// A simple \"falling rain\" effect. Each drop has a position (x, y), a\n// downward velocity (vy), and a length. Tilt the device left/right and\n// the rain leans with gravity (accelX/accelY are read every frame).\n//\n// Demonstrates: arrays of small objects, setup-time initialization,\n// per-frame state mutation, sensor input without autoRotate().\n\nlet drops = [];   // array of drop objects, populated in setup()\nlet N = 35;   // reduced — the on-device interpreter has FFI overhead per call       // how many drops to simulate\n\nfunction setup() {\n  // Pre-allocate every drop once (much cheaper than creating new objects\n  // every frame inside draw()).\n  for (let i = 0; i < N; i++) {\n    drops.push({\n      x: random(0, 240),\n      y: random(0, 240),       // start scattered across the screen\n      vy: random(2, 5),        // each drop falls at its own speed\n      len: random(6, 16)       // and has its own visual length\n    });\n  }\n}\n\nfunction draw() {\n  // Deep blue background — repaint each frame so old drops don't trail.\n  background(6, 8, 18);\n\n  // Light cyan strokes for the drops themselves.\n  stroke(120, 200, 255, 180);\n  strokeWeight(1);\n\n  for (let i = 0; i < N; i++) {\n    let d = drops[i];\n\n    // Apply gravity-derived offsets:\n    //   accelX pushes drops sideways (~ wind)\n    //   accelY adds to the constant fall speed\n    d.x = d.x + accelX * 1.2;\n    d.y = d.y + d.vy + accelY * 0.8;\n\n    // Each drop is a short vertical line.\n    line(d.x, d.y, d.x, d.y + d.len);\n\n    // Wrap around the edges so the field never empties out.\n    if (d.y > 240) { d.y = -10; d.x = random(0, 240); }\n    if (d.x < 0)   { d.x = 240; }\n    if (d.x > 240) { d.x = 0; }\n  }\n}\n",
+  "wave": "// wave.js — animated sine wave field\n//\n// Two overlapping sine waves of different frequencies and colors, with a\n// white dot riding the top wave. The phase scrolls forever via frameCount.\n//\n// Demonstrates: for-loops, sin() for animation, multiple stroke colors,\n// \"scrolling\" by reading frameCount.\n\nfunction setup() {}\n\nfunction draw() {\n  // Dark plum background.\n  background(10, 6, 24);\n\n  // We're drawing 1-px points along the wave, so we use stroke (not fill).\n  noFill();\n  strokeWeight(2);\n\n  // `t` is the time-phase. Bigger multiplier = faster motion.\n  let t = frameCount * 0.04;\n\n  // ── upper wave: cyan ──\n  // Step across the screen 4 px at a time (cheaper than every pixel).\n  // y = base + amplitude * sin(spatial_frequency * x + time_phase)\n  stroke(120, 220, 255);\n  for (let x = 0; x < 240; x = x + 4) {\n    point(x, 110 + sin(x * 0.05 + t) * 30);\n  }\n\n  // ── lower wave: pink, different frequency, scrolls the other way ──\n  stroke(255, 140, 180);\n  for (let x = 0; x < 240; x = x + 4) {\n    point(x, 150 + sin(x * 0.06 - t * 1.4) * 24);\n  }\n\n  // ── the ball rides the upper wave ──\n  // It moves left-to-right and wraps around every 200 frames.\n  let bx = 20 + ((frameCount * 1.5) % 200);\n  let by = 110 + sin(bx * 0.05 + t) * 30;\n  noStroke();\n  fill(255);\n  circle(bx, by, 8);\n}\n",
+  "clock": "// clock.js — analog clock showing time since boot\n//\n// Demonstrates nested rotate/push/pop transforms. The hour, minute, and\n// second hands all start at the same origin and rotate by different\n// amounts each frame. Push/pop isolate each hand's rotation so they\n// don't compound.\n//\n// Note: this is uptime, not wall-clock time — millis() is \"ms since the\n// device booted\", which resets to 0 on power-up. So at first plug-in the\n// clock starts at 12.\n\nfunction setup() {\n  // A clock face is one of those rare cases where you DO want the canvas\n  // to rotate with the device — so \"up\" on the dial always faces up.\n  autoRotate();\n}\n\nfunction draw() {\n  background(12, 8, 20);\n\n  // Seconds elapsed since boot, as a float.\n  let secs = millis() / 1000;\n\n  // Move origin to the canvas center; every later coord is relative to it.\n  push();\n  translate(120, 120);\n\n  // ── dial: outline + tick marks ──\n  noFill();\n  stroke(60, 80, 110);\n  strokeWeight(2);\n  circle(0, 0, 200);\n\n  stroke(120, 160, 200);\n  for (let i = 0; i < 12; i++) {\n    push();\n    rotate(i * (PI / 6));          // 12 hour-positions\n    line(0, -95, 0, -85);          // a short tick near the rim\n    pop();\n  }\n\n  // ── second hand: thin orange ──\n  // 60 seconds = full rotation, so divide secs by 60.\n  push();\n  rotate(secs * (TWO_PI / 60));\n  stroke(255, 160, 80);\n  strokeWeight(2);\n  line(0, 0, 0, -85);\n  pop();\n\n  // ── minute hand: thicker white ──\n  push();\n  rotate((secs / 60) * (TWO_PI / 60));\n  stroke(220, 240, 255);\n  strokeWeight(4);\n  line(0, 0, 0, -65);\n  pop();\n\n  // ── hour hand: thickest, cyan ──\n  push();\n  rotate((secs / 3600) * (TWO_PI / 12));\n  stroke(120, 200, 255);\n  strokeWeight(5);\n  line(0, 0, 0, -42);\n  pop();\n\n  // Center cap covers where all the hands meet.\n  noStroke();\n  fill(255);\n  circle(0, 0, 8);\n\n  pop();\n}\n",
+  "shake": "// shake.js — accel-driven particle system\n//\n// Particles drift around based on the accelerometer. When you shake the\n// device hard, the shake threshold is crossed and every particle gets a\n// random kick — like throwing them in the air. They settle as motion\n// dampens.\n//\n// Demonstrates: particle state in an array, per-frame damping, sensor\n// thresholding, color cycling via frameCount.\n\nlet parts = [];   // each entry: { x, y, vx, vy, h (hue offset) }\nlet N = 40;\n\nfunction setup() {\n  // All particles start at the canvas center, no velocity.\n  for (let i = 0; i < N; i++) {\n    parts.push({ x: 120, y: 120, vx: 0, vy: 0, h: i * 9 });\n  }\n}\n\nfunction draw() {\n  // Slight alpha on background = motion trails (each old frame fades).\n  background(10, 12, 20, 200);\n\n  // Total tilt magnitude. Above ~1.4 g means \"you're shaking it\".\n  let shake = sqrt(accelX * accelX + accelY * accelY);\n  let kick = 0;\n  if (shake > 1.4) { kick = (shake - 1.4) * 6; }   // scale into a usable range\n\n  noStroke();\n  for (let i = 0; i < N; i++) {\n    let p = parts[i];\n\n    // On a shake, jitter each particle randomly — that's the \"explosion\".\n    if (kick > 0) {\n      p.vx = p.vx + (random(-1, 1)) * kick;\n      p.vy = p.vy + (random(-1, 1)) * kick;\n    }\n\n    // Drag (multiply by 0.94 each frame) + steady pull from gravity.\n    p.vx = p.vx * 0.94 + accelX * 0.3;\n    p.vy = p.vy * 0.94 + accelY * 0.3;\n\n    // Integrate velocity.\n    p.x = p.x + p.vx;\n    p.y = p.y + p.vy;\n\n    // Bounce off the screen edges.\n    if (p.x < 10 || p.x > 230) { p.vx = -p.vx * 0.5; }\n    if (p.y < 10 || p.y > 230) { p.vy = -p.vy * 0.5; }\n\n    // Color cycles based on hue offset + time.\n    let r = (((p.h + frameCount) * 1.4) % 240);\n    let g = (((p.h + frameCount) * 0.6) % 240);\n    fill(150 + r * 0.4, 100 + g * 0.5, 220);\n    circle(p.x, p.y, 7);\n  }\n}\n"
+}
+</script>
+
+<script>
+'use strict';
+
+// =============================================================================
+// Capability check
+// =============================================================================
+const HAS_SERIAL = 'serial' in navigator;
+const HAS_FSA    = 'showOpenFilePicker' in window;
+{
+  const b = document.getElementById('capability-banner');
+  if (!HAS_SERIAL || !HAS_FSA) {
+    b.style.display = 'block';
+    b.textContent = `This page needs WebSerial${HAS_SERIAL ? '' : ' (missing)'} and File System Access${HAS_FSA ? '' : ' (missing)'}. Use a recent Chrome or Edge.`;
+  }
+}
+
+// =============================================================================
+// Tabs
+// =============================================================================
+for (const t of document.querySelectorAll('.tab')) {
+  t.addEventListener('click', () => {
+    for (const x of document.querySelectorAll('.tab')) x.classList.toggle('active', x === t);
+    const id = t.dataset.tab;
+    for (const p of document.querySelectorAll('.tab-panel')) p.classList.toggle('active', p.id === 'tab-' + id);
+  });
+}
+
+// =============================================================================
+// Log
+// =============================================================================
+const logEl = document.getElementById('log');
+function ts() { return new Date().toTimeString().slice(0, 8); }
+function log(msg, kind) {
+  const line = document.createElement('div');
+  line.className = 'line' + (kind ? ' ' + kind : '');
+  const t = document.createElement('span'); t.className = 'ts'; t.textContent = ts();
+  line.appendChild(t);
+  line.appendChild(document.createTextNode(msg));
+  logEl.appendChild(line);
+  while (logEl.children.length > 500) logEl.removeChild(logEl.firstChild);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+document.getElementById('log-clear').onclick = () => { logEl.innerHTML = ''; };
+
+// =============================================================================
+// Examples
+// =============================================================================
+const EXAMPLES = JSON.parse(document.getElementById('examples-data').textContent);
+const exSel = document.getElementById('examples-select');
+for (const name of Object.keys(EXAMPLES)) {
+  const opt = document.createElement('option');
+  opt.value = name; opt.textContent = name;
+  exSel.appendChild(opt);
+}
+exSel.addEventListener('change', () => {
+  const name = exSel.value;
+  if (!name) return;
+  loadSource({ kind: 'example', name, text: EXAMPLES[name] });
+  exSel.value = '';  // reset so the same example can be re-loaded
+});
+
+// =============================================================================
+// Sketch state
+//   loaded = { kind: 'example' | 'file', name, text, handle? }
+//   When kind=='file' we poll for changes and auto-push.
+// =============================================================================
+let loaded = null;
+let watchTimer = null;
+let lastFileMod = -1, lastFileSize = -1;
+
+function fmtBytes(n) { return n < 1024 ? `${n} b` : `${(n / 1024).toFixed(1)} kB`; }
+
+function clearWatcher() {
+  if (watchTimer) { clearInterval(watchTimer); watchTimer = null; }
+  lastFileMod = -1; lastFileSize = -1;
+}
+
+function setSketchMeta(text) {
+  document.getElementById('sketch-meta').textContent = text;
+}
+
+function renderPreview(text) {
+  const box = document.getElementById('preview-box');
+  if (!text) {
+    box.innerHTML = '<div class="preview-empty">load an example or pick a sketch file to begin.</div>';
+    return;
+  }
+  const pre  = document.createElement('pre');
+  const code = document.createElement('code');
+  code.className = 'language-javascript';
+  code.textContent = text;
+  pre.appendChild(code);
+  box.innerHTML = '';
+  box.appendChild(pre);
+  // Prism is loaded with `defer`, so it may not be ready on the first render.
+  // Highlight when available; retry briefly if it's still loading.
+  const highlight = () => {
+    if (window.Prism && Prism.highlightElement) Prism.highlightElement(code);
+    else setTimeout(highlight, 60);
+  };
+  highlight();
+}
+
+function loadSource(item) {
+  loaded = item;
+  const meta = item.kind === 'file'
+    ? `${item.name} · file · ${fmtBytes(item.text.length)}`
+    : `${item.name} · example · ${fmtBytes(item.text.length)}`;
+  setSketchMeta(meta);
+  renderPreview(item.text);
+  runLint(item.text);
+  startPreviewRender(item.text);
+  document.getElementById('push-now').disabled = false;
+  log(`loaded ${item.kind}: ${item.name} (${fmtBytes(item.text.length)})`, 'evt');
+  // Auto-push if connected
+  if (writer) pushLoaded();
+}
+
+async function pickSketch() {
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      types: [{ description: 'p5 sketch', accept: { 'text/javascript': ['.js'] } }],
+      multiple: false,
+    });
+    const file = await handle.getFile();
+    const text = await file.text();
+    clearWatcher();
+    loadSource({ kind: 'file', name: file.name, text, handle });
+    lastFileMod = file.lastModified; lastFileSize = file.size;
+    watchTimer = setInterval(checkFile, 500);
+  } catch (e) {
+    if (e.name !== 'AbortError') log(`pick failed: ${e.message}`, 'err');
+  }
+}
+
+async function checkFile() {
+  if (!loaded || loaded.kind !== 'file') return;
+  let file;
+  try { file = await loaded.handle.getFile(); }
+  catch (e) { log(`file gone: ${e.message}`, 'err'); clearWatcher(); return; }
+  if (file.size === lastFileSize && file.lastModified === lastFileMod) return;
+  lastFileSize = file.size; lastFileMod = file.lastModified;
+  const text = await file.text();
+  loaded.text = text;
+  setSketchMeta(`${loaded.name} · file · ${fmtBytes(text.length)}`);
+  renderPreview(text);
+  runLint(text);
+  startPreviewRender(text);
+  if (writer) pushLoaded();
+  log(`detected save: ${loaded.name}`, 'evt');
+}
+
+async function pushLoaded() {
+  if (!loaded) { log('nothing loaded to push', 'err'); return; }
+  if (!writer) { log('not connected — connect the device first', 'err'); return; }
+  await uploadToDevice('/sketches/current.js', loaded.text);
+}
+
+document.getElementById('pick-sketch').onclick = pickSketch;
+document.getElementById('push-now').onclick    = pushLoaded;
+
+// =============================================================================
+// Lint — heuristics that catch most mJS gotchas
+// =============================================================================
+function runLint(src) {
+  const issues = [];
+  if (!/function\s+setup\s*\(/.test(src))
+    issues.push({ tag: 'warn', msg: 'no setup() defined — device will use an empty default' });
+  if (!/function\s+draw\s*\(/.test(src))
+    issues.push({ tag: 'warn', msg: 'no draw() defined — nothing will animate' });
+  if (/=>/.test(src))
+    issues.push({ tag: 'err', msg: 'arrow functions are not supported — write function(x){…} instead' });
+  if (/`[^`]*\$\{[^`]*\}[^`]*`/.test(src))
+    issues.push({ tag: 'err', msg: 'template literals are not supported — concatenate with +' });
+  if (/\bconst\s+[A-Za-z_$]/.test(src))
+    issues.push({ tag: 'err', msg: '`const` is not supported — use `let`' });
+  if (/\bclass\s+\w/.test(src))
+    issues.push({ tag: 'err', msg: '`class` is not supported — use object literals + functions' });
+  if (/\bMath\./.test(src))
+    issues.push({ tag: 'warn', msg: 'use bare sin/cos/etc. — Math.* is not defined on device' });
+  if (/\bvar\s+/.test(src))
+    issues.push({ tag: 'ok',  msg: '`var` will be auto-rewritten to `let` on load (works fine)' });
+  if (/\b(async|await|Promise)\b/.test(src))
+    issues.push({ tag: 'err', msg: 'async/await/Promise are not supported' });
+  if (/\b(strokeWeight)\s*\(\s*(\d+)/.test(src)) {
+    const m = src.match(/strokeWeight\s*\(\s*(\d+)/);
+    if (m && +m[1] > 8) issues.push({ tag: 'warn', msg: `strokeWeight(${m[1]}) is clamped to 8 on device` });
+  }
+  // Crude string + number warning
+  const concat = src.match(/"[^"\n]*"\s*\+\s*([A-Za-z_$][\w$]*)\b(?!\s*\()/);
+  if (concat && !/\bstr\s*\(\s*$/.test(src.slice(0, src.indexOf(concat[0])))) {
+    issues.push({ tag: 'warn', msg: `"text" + ${concat[1]} — wrap numbers with str() to avoid implicit conversion errors` });
+  }
+
+  const out = document.getElementById('lint');
+  out.innerHTML = '';
+  if (issues.length === 0) {
+    out.innerHTML = '<div class="lint-row ok"><span class="tag">OK</span><span class="msg">no issues detected — should run on device</span></div>';
+    return;
+  }
+  for (const i of issues) {
+    const row = document.createElement('div');
+    row.className = 'lint-row ' + i.tag;
+    row.innerHTML = `<span class="tag">${i.tag.toUpperCase()}</span><span class="msg">${i.msg}</span>`;
+    out.appendChild(row);
+  }
+}
+
+// =============================================================================
+// Browser-side preview render via p5.js
+// =============================================================================
+let p5Instance = null;
+
+function startPreviewRender(src) {
+  // Wait for p5 if it hasn't loaded yet
+  if (typeof p5 === 'undefined') { setTimeout(() => startPreviewRender(src), 100); return; }
+
+  const host = document.getElementById('canvas-host');
+  const empty = document.getElementById('canvas-empty');
+
+  // Tear down previous instance
+  if (p5Instance) { try { p5Instance.remove(); } catch {} p5Instance = null; }
+
+  // Shims: mJS-only globals that p5 web doesn't have.
+  window.str          = function (x) { return String(x); };
+  window.accelX       = 0;
+  window.accelY       = 0;
+  window.accelZ       = -1;
+  window.autoRotate   = function () {};   // no-op in browser preview
+  window.noAutoRotate = function () {};
+  window.centerOrigin = function () { translate(width / 2, height / 2); };
+  // Wipe any prior user setup/draw + stashes
+  window.setup = undefined;
+  window.draw  = undefined;
+  window.__qringUserSetup = null;
+  window.__qringUserDraw  = null;
+
+  // Substitute var → let so the sketch loads same as the device does.
+  const src2 = src.replace(/(^|[\s;{])var\s+/g, '$1let ');
+
+  // Wrap so the user's setup/draw end up addressable from outside the new
+  // Function scope. (Function declarations inside `new Function(...)` are
+  // local to that function's scope, so they don't reach window on their own.)
+  const wrapped = src2 + `
+;try { if (typeof setup === 'function') window.__qringUserSetup = setup; } catch(e) {}
+;try { if (typeof draw  === 'function') window.__qringUserDraw  = draw;  } catch(e) {}`;
+
+  let evalError = null;
+  try { (new Function(wrapped))(); }
+  catch (e) { evalError = e; }
+
+  if (evalError) {
+    empty.style.display = 'grid';
+    empty.innerHTML = `eval error<br><span style="color:var(--bad)">${evalError.message}</span>`;
+    return;
+  }
+  if (!window.__qringUserSetup && !window.__qringUserDraw) {
+    empty.style.display = 'grid';
+    empty.innerHTML = `no setup() or draw() — nothing to preview`;
+    return;
+  }
+
+  empty.style.display = 'none';
+
+  // Animate the IMU shims so sensor-driven sketches show motion in preview.
+  const t0 = performance.now();
+  const animateAccel = function () {
+    const t = (performance.now() - t0) / 1000;
+    window.accelX = Math.sin(t * 0.8) * 0.3;
+    window.accelY = Math.cos(t * 1.1) * 0.3;
+  };
+
+  const userSetup = window.__qringUserSetup;
+  const userDraw  = window.__qringUserDraw;
+  window.setup = function () {
+    createCanvas(240, 240);
+    frameRate(30);
+    if (typeof userSetup === 'function') {
+      try { userSetup(); }
+      catch (e) {
+        empty.style.display = 'grid';
+        empty.innerHTML = `setup() error<br><span style="color:var(--bad)">${e.message}</span>`;
+      }
+    }
+  };
+  window.draw = function () {
+    animateAccel();
+    if (typeof userDraw === 'function') {
+      try { userDraw(); }
+      catch (e) {
+        noLoop();
+        empty.style.display = 'grid';
+        empty.innerHTML = `draw() error<br><span style="color:var(--bad)">${e.message}</span>`;
+      }
+    }
+  };
+
+  p5Instance = new p5(undefined, host);
+}
+
+// =============================================================================
+// Serial (WebSerial)
+// =============================================================================
+let port = null, writer = null, reader = null, readLoopAbort = false;
+let uploads = 0, errors = 0;
+
+function setConnected(on) {
+  const pill = document.getElementById('dev-pill');
+  pill.classList.toggle('connected', on);
+  document.body.classList.toggle('connected', on);   // gates Sketch + Log panes
+  document.getElementById('dev-status').textContent = on ? 'connected' : 'not connected';
+  document.getElementById('connect').disabled = on;
+  document.getElementById('disconnect').disabled = !on;
+  document.getElementById('cmd-send').disabled = !on;
+}
+
+async function connectDevice() {
+  try {
+    port = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x2E8A }] });
+    await port.open({ baudRate: 115200, bufferSize: 8192 });
+    setConnected(true);
+    const info = port.getInfo();
+    document.getElementById('device-meta').textContent =
+      info.usbVendorId ? `VID ${info.usbVendorId.toString(16)} / PID ${info.usbProductId.toString(16)}` : 'connected';
+    log('device connected', 'ok');
+    writer = port.writable.getWriter();
+    readLoopAbort = false;
+    readLoop();
+    if (loaded) await pushLoaded();
+  } catch (e) {
+    if (e.name !== 'NotFoundError') log(`connect failed: ${e.message}`, 'err');
+  }
+}
+
+async function disconnectDevice() {
+  try {
+    readLoopAbort = true;
+    if (reader) await reader.cancel().catch(()=>{});
+    if (writer) writer.releaseLock();
+    if (port)   await port.close();
+  } catch (e) { log(`disconnect: ${e.message}`, 'err'); }
+  writer = null; reader = null; port = null;
+  setConnected(false);
+  log('device disconnected');
+}
+
+async function readLoop() {
+  const dec = new TextDecoder();
+  let buf = '';
+  try {
+    reader = port.readable.getReader();
+    while (!readLoopAbort) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let nl;
+      while ((nl = buf.indexOf('\n')) !== -1) {
+        const line = buf.slice(0, nl).replace(/\r$/, '');
+        buf = buf.slice(nl + 1);
+        if (line.length === 0) continue;
+        const kind = line.includes('ERROR') ? 'err'
+                  : line.includes('Sketch reloaded') ? 'ok'
+                  : /\[(LOADER|FACE|VM|IMU|Q-RING|CMD|UPLOAD|INFO|LIST)\]/.test(line) ? 'evt'
+                  : null;
+        log(line, kind);
+      }
+    }
+  } catch (e) { log(`read loop: ${e.message}`, 'err'); }
+  finally     { if (reader) reader.releaseLock(); }
+}
+
+const enc = new TextEncoder();
+async function writeBytes(bytes) { if (!writer) return false; await writer.write(bytes); return true; }
+async function sendCommand(cmd)  { log(`> ${cmd}`, 'tx'); await writeBytes(enc.encode(cmd + '\n')); }
+
+async function uploadToDevice(devicePath, text) {
+  if (!writer) { log(`(not connected — skipping upload of ${devicePath})`, 'err'); errors++; document.getElementById('stat-errors').textContent = errors; return; }
+  const body = enc.encode(text);
+  try {
+    await writeBytes(enc.encode(`UPLOAD ${devicePath} ${body.length}\n`));
+    await writeBytes(body);
+    await writeBytes(enc.encode('\nEND\n'));
+    uploads++;
+    document.getElementById('stat-uploads').textContent = uploads;
+    document.getElementById('stat-bytes').textContent = body.length;
+    log(`pushed ${body.length} bytes → ${devicePath}`, 'ok');
+  } catch (e) {
+    errors++; document.getElementById('stat-errors').textContent = errors;
+    log(`upload failed: ${e.message}`, 'err');
+  }
+}
+
+document.getElementById('connect').onclick    = connectDevice;
+document.getElementById('disconnect').onclick = disconnectDevice;
+
+const cmdInput = document.getElementById('cmd');
+async function submitCmd() {
+  const c = cmdInput.value.trim();
+  if (!c) return;
+  cmdInput.value = '';
+  await sendCommand(c);
+}
+cmdInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitCmd(); });
+document.getElementById('cmd-send').onclick = submitCmd;
+
+// =============================================================================
+// Face state buttons + brightness slider.
+// Both send Serial commands; the device persists changes to /sketches/.settings.
+// =============================================================================
+const FACE_STATES = [
+  'happy', 'sad', 'thinking', 'listening',
+  'surprised', 'sleeping', 'speaking', 'angry',
+  'idle', 'calibrate',
+];
+let selectedFace = 'happy';
+
+const faceRow = document.getElementById('face-btns');
+for (const name of FACE_STATES) {
+  const b = document.createElement('button');
+  b.className = 'btn' + (name === selectedFace ? ' selected' : '');
+  b.dataset.face = name;
+  b.textContent = name;
+  b.onclick = async () => {
+    selectedFace = name;
+    for (const el of faceRow.children) {
+      el.classList.toggle('selected', el.dataset.face === name);
+    }
+    await sendCommand(name);
+  };
+  faceRow.appendChild(b);
+}
+
+const bSlider = document.getElementById('brightness');
+const bReadout = document.getElementById('brightness-val');
+let brightnessTimer = null;
+bSlider.addEventListener('input', () => {
+  bReadout.textContent = bSlider.value;
+  // Debounce — only send after the user stops moving the slider for 120 ms.
+  clearTimeout(brightnessTimer);
+  brightnessTimer = setTimeout(() => sendCommand('bright ' + bSlider.value), 120);
+});
+
+const cInput = document.getElementById('accent');
+const cReadout = document.getElementById('accent-val');
+let accentTimer = null;
+cInput.addEventListener('input', () => {
+  const hex = cInput.value;   // "#rrggbb"
+  cReadout.textContent = hex.toUpperCase();
+  clearTimeout(accentTimer);
+  accentTimer = setTimeout(() => sendCommand('color ' + hex.slice(1).toUpperCase()), 120);
+});
+
+setConnected(false);
+log('ready. load a sketch + connect the device.', 'evt');
+</script>
+</body>
+</html>
