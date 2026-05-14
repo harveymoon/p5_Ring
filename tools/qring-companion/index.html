@@ -428,6 +428,7 @@
         </select>
         <button class="btn" id="pick-sketch">Pick sketch file…</button>
         <button class="btn primary" id="push-now" disabled>Push to device</button>
+        <button class="btn" id="sketch-toggle" title="toggle sketch runner vs fallback face">Sketch: ON</button>
       </div>
       <div class="sketch-grid">
         <div>
@@ -672,7 +673,7 @@ function draw() {
   "rain": "// rain.js — particle system, gravity-aware\n//\n// A simple \"falling rain\" effect. Each drop has a position (x, y), a\n// downward velocity (vy), and a length. Tilt the device left/right and\n// the rain leans with gravity (accelX/accelY are read every frame).\n//\n// Demonstrates: arrays of small objects, setup-time initialization,\n// per-frame state mutation, sensor input without autoRotate().\n\nlet drops = [];   // array of drop objects, populated in setup()\nlet N = 35;   // reduced — the on-device interpreter has FFI overhead per call       // how many drops to simulate\n\nfunction setup() {\n  // Pre-allocate every drop once (much cheaper than creating new objects\n  // every frame inside draw()).\n  for (let i = 0; i < N; i++) {\n    drops.push({\n      x: random(0, 240),\n      y: random(0, 240),       // start scattered across the screen\n      vy: random(2, 5),        // each drop falls at its own speed\n      len: random(6, 16)       // and has its own visual length\n    });\n  }\n}\n\nfunction draw() {\n  // Deep blue background — repaint each frame so old drops don't trail.\n  background(6, 8, 18);\n\n  // Light cyan strokes for the drops themselves.\n  stroke(120, 200, 255, 180);\n  strokeWeight(1);\n\n  for (let i = 0; i < N; i++) {\n    let d = drops[i];\n\n    // Apply gravity-derived offsets:\n    //   accelX pushes drops sideways (~ wind)\n    //   accelY adds to the constant fall speed\n    d.x = d.x + accelX * 1.2;\n    d.y = d.y + d.vy + accelY * 0.8;\n\n    // Each drop is a short vertical line.\n    line(d.x, d.y, d.x, d.y + d.len);\n\n    // Wrap around the edges so the field never empties out.\n    if (d.y > 240) { d.y = -10; d.x = random(0, 240); }\n    if (d.x < 0)   { d.x = 240; }\n    if (d.x > 240) { d.x = 0; }\n  }\n}\n",
   "wave": "// wave.js — animated sine wave field\n//\n// Two overlapping sine waves of different frequencies and colors, with a\n// white dot riding the top wave. The phase scrolls forever via frameCount.\n//\n// Demonstrates: for-loops, sin() for animation, multiple stroke colors,\n// \"scrolling\" by reading frameCount.\n\nfunction setup() {}\n\nfunction draw() {\n  // Dark plum background.\n  background(10, 6, 24);\n\n  // We're drawing 1-px points along the wave, so we use stroke (not fill).\n  noFill();\n  strokeWeight(2);\n\n  // `t` is the time-phase. Bigger multiplier = faster motion.\n  let t = frameCount * 0.04;\n\n  // ── upper wave: cyan ──\n  // Step across the screen 4 px at a time (cheaper than every pixel).\n  // y = base + amplitude * sin(spatial_frequency * x + time_phase)\n  stroke(120, 220, 255);\n  for (let x = 0; x < 240; x = x + 4) {\n    point(x, 110 + sin(x * 0.05 + t) * 30);\n  }\n\n  // ── lower wave: pink, different frequency, scrolls the other way ──\n  stroke(255, 140, 180);\n  for (let x = 0; x < 240; x = x + 4) {\n    point(x, 150 + sin(x * 0.06 - t * 1.4) * 24);\n  }\n\n  // ── the ball rides the upper wave ──\n  // It moves left-to-right and wraps around every 200 frames.\n  let bx = 20 + ((frameCount * 1.5) % 200);\n  let by = 110 + sin(bx * 0.05 + t) * 30;\n  noStroke();\n  fill(255);\n  circle(bx, by, 8);\n}\n",
   "clock": "// clock.js — analog clock showing time since boot\n//\n// Demonstrates nested rotate/push/pop transforms. The hour, minute, and\n// second hands all start at the same origin and rotate by different\n// amounts each frame. Push/pop isolate each hand's rotation so they\n// don't compound.\n//\n// Note: this is uptime, not wall-clock time — millis() is \"ms since the\n// device booted\", which resets to 0 on power-up. So at first plug-in the\n// clock starts at 12.\n\nfunction setup() {\n  // A clock face is one of those rare cases where you DO want the canvas\n  // to rotate with the device — so \"up\" on the dial always faces up.\n  autoRotate();\n}\n\nfunction draw() {\n  background(12, 8, 20);\n\n  // Seconds elapsed since boot, as a float.\n  let secs = millis() / 1000;\n\n  // Move origin to the canvas center; every later coord is relative to it.\n  push();\n  translate(120, 120);\n\n  // ── dial: outline + tick marks ──\n  noFill();\n  stroke(60, 80, 110);\n  strokeWeight(2);\n  circle(0, 0, 200);\n\n  stroke(120, 160, 200);\n  for (let i = 0; i < 12; i++) {\n    push();\n    rotate(i * (PI / 6));          // 12 hour-positions\n    line(0, -95, 0, -85);          // a short tick near the rim\n    pop();\n  }\n\n  // ── second hand: thin orange ──\n  // 60 seconds = full rotation, so divide secs by 60.\n  push();\n  rotate(secs * (TWO_PI / 60));\n  stroke(255, 160, 80);\n  strokeWeight(2);\n  line(0, 0, 0, -85);\n  pop();\n\n  // ── minute hand: thicker white ──\n  push();\n  rotate((secs / 60) * (TWO_PI / 60));\n  stroke(220, 240, 255);\n  strokeWeight(4);\n  line(0, 0, 0, -65);\n  pop();\n\n  // ── hour hand: thickest, cyan ──\n  push();\n  rotate((secs / 3600) * (TWO_PI / 12));\n  stroke(120, 200, 255);\n  strokeWeight(5);\n  line(0, 0, 0, -42);\n  pop();\n\n  // Center cap covers where all the hands meet.\n  noStroke();\n  fill(255);\n  circle(0, 0, 8);\n\n  pop();\n}\n",
-  "shake": "// shake.js — accel-driven particle system\n//\n// Particles drift around based on the accelerometer. When you shake the\n// device hard, the shake threshold is crossed and every particle gets a\n// random kick — like throwing them in the air. They settle as motion\n// dampens.\n//\n// Demonstrates: particle state in an array, per-frame damping, sensor\n// thresholding, color cycling via frameCount.\n\nlet parts = [];   // each entry: { x, y, vx, vy, h (hue offset) }\nlet N = 40;\n\nfunction setup() {\n  // All particles start at the canvas center, no velocity.\n  for (let i = 0; i < N; i++) {\n    parts.push({ x: 120, y: 120, vx: 0, vy: 0, h: i * 9 });\n  }\n}\n\nfunction draw() {\n  // Slight alpha on background = motion trails (each old frame fades).\n  background(10, 12, 20, 200);\n\n  // Total tilt magnitude. Above ~1.4 g means \"you're shaking it\".\n  let shake = sqrt(accelX * accelX + accelY * accelY);\n  let kick = 0;\n  if (shake > 1.4) { kick = (shake - 1.4) * 6; }   // scale into a usable range\n\n  noStroke();\n  for (let i = 0; i < N; i++) {\n    let p = parts[i];\n\n    // On a shake, jitter each particle randomly — that's the \"explosion\".\n    if (kick > 0) {\n      p.vx = p.vx + (random(-1, 1)) * kick;\n      p.vy = p.vy + (random(-1, 1)) * kick;\n    }\n\n    // Drag (multiply by 0.94 each frame) + steady pull from gravity.\n    p.vx = p.vx * 0.94 + accelX * 0.3;\n    p.vy = p.vy * 0.94 + accelY * 0.3;\n\n    // Integrate velocity.\n    p.x = p.x + p.vx;\n    p.y = p.y + p.vy;\n\n    // Bounce off the screen edges.\n    if (p.x < 10 || p.x > 230) { p.vx = -p.vx * 0.5; }\n    if (p.y < 10 || p.y > 230) { p.vy = -p.vy * 0.5; }\n\n    // Color cycles based on hue offset + time.\n    let r = (((p.h + frameCount) * 1.4) % 240);\n    let g = (((p.h + frameCount) * 0.6) % 240);\n    fill(150 + r * 0.4, 100 + g * 0.5, 220);\n    circle(p.x, p.y, 7);\n  }\n}\n"
+  "shake": "// shake.js — bouncing balls in a circular arena\n//\n// Tilt to roll the balls around (gravity follows tilt). Shake the device\n// and all of them jolt at once. They reflect off the round wall with some\n// energy loss.\n//\n// Demonstrates: a useful \"shake event\" pattern — compare the current\n// accelerometer reading against the previous frame's, and trigger when\n// the change (jerk) crosses a threshold. This avoids false positives\n// from steady gravity, which the previous version of this sketch had.\n\nlet balls = [];\nlet N = 12;             // small enough to stay smooth on the on-device VM\nlet prevAX = 0;         // last frame's accel — used to detect shake\nlet prevAY = 0;\n\nfunction setup() {\n  // Scatter balls evenly around a small ring near the center.\n  for (let i = 0; i < N; i++) {\n    let a = i * (TWO_PI / N);\n    balls.push({\n      x: 120 + cos(a) * 40,\n      y: 120 + sin(a) * 40,\n      vx: 0,\n      vy: 0\n    });\n  }\n}\n\nfunction draw() {\n  background(8, 8, 18);\n\n  // Faint ring marking the arena boundary.\n  noFill();\n  stroke(themeR / 5, themeG / 5, themeB / 5);\n  strokeWeight(1);\n  circle(120, 120, 220);\n\n  // Shake detection: how much did the accel vector move since last frame?\n  // Steady gravity gives ~0 here; only real motion (jerk) crosses the gate.\n  let jerk = abs(accelX - prevAX) + abs(accelY - prevAY);\n  prevAX = accelX;\n  prevAY = accelY;\n  let kick = 0;\n  if (jerk > 0.5) { kick = jerk * 5; }\n\n  noStroke();\n  fill(themeR, themeG, themeB);\n\n  for (let i = 0; i < N; i++) {\n    let b = balls[i];\n\n    // On a real shake, give every ball a random impulse.\n    if (kick > 0) {\n      b.vx = b.vx + (random(-1, 1)) * kick;\n      b.vy = b.vy + (random(-1, 1)) * kick;\n    }\n\n    // Gravity from the tilt vector + friction.\n    b.vx = b.vx * 0.95 + accelX * 0.5;\n    b.vy = b.vy * 0.95 + accelY * 0.5;\n\n    // Integrate position.\n    b.x = b.x + b.vx;\n    b.y = b.y + b.vy;\n\n    // Reflect off the circular wall (radius 105 from center).\n    let dx = b.x - 120;\n    let dy = b.y - 120;\n    let d2 = dx * dx + dy * dy;\n    if (d2 > 105 * 105) {\n      let d = sqrt(d2);\n      // Snap back inside the boundary.\n      b.x = 120 + dx * 105 / d;\n      b.y = 120 + dy * 105 / d;\n      // Reflect velocity across the wall normal, with 60% restitution.\n      let dot = (b.vx * dx + b.vy * dy) / d2;\n      b.vx = (b.vx - 2 * dot * dx) * 0.6;\n      b.vy = (b.vy - 2 * dot * dy) * 0.6;\n    }\n\n    circle(b.x, b.y, 12);\n  }\n}\n"
 }
 </script>
 
@@ -717,6 +718,15 @@ function log(msg, kind) {
   logEl.appendChild(line);
   while (logEl.children.length > 500) logEl.removeChild(logEl.firstChild);
   logEl.scrollTop = logEl.scrollHeight;
+
+  // Keep the Sketch toggle in sync with what the device reports. The device
+  // emits "[INFO] active=N error=N ..." after `sketch info` or implicitly
+  // (e.g. when a watchdog error flips the sketch off).
+  const m = /\[INFO\] active=(\d)/.exec(msg);
+  if (m && typeof sketchRunning !== 'undefined') {
+    const on = m[1] === '1';
+    if (on !== sketchRunning) { sketchRunning = on; paintSketchToggle(); }
+  }
 }
 document.getElementById('log-clear').onclick = () => { logEl.innerHTML = ''; };
 
@@ -1127,6 +1137,32 @@ cInput.addEventListener('input', () => {
   clearTimeout(accentTimer);
   accentTimer = setTimeout(() => sendCommand('color ' + hex.slice(1).toUpperCase()), 120);
 });
+
+// =============================================================================
+// Sketch ON / OFF toggle — swaps device between running the JS sketch and
+// rendering the fallback animated face. `log()` above keeps `sketchRunning`
+// synced with any [INFO] active= lines the device emits.
+// =============================================================================
+let sketchRunning = true;
+const sketchToggleBtn = document.getElementById('sketch-toggle');
+function paintSketchToggle() {
+  sketchToggleBtn.textContent = sketchRunning ? 'Sketch: ON' : 'Sketch: OFF (face)';
+  sketchToggleBtn.classList.toggle('selected', sketchRunning);
+}
+sketchToggleBtn.onclick = async () => {
+  sketchRunning = !sketchRunning;
+  paintSketchToggle();
+  await sendCommand(sketchRunning ? 'sketch on' : 'sketch off');
+};
+paintSketchToggle();
+
+// On connect, ask the device its real state once.
+const origConnect = connectDevice;
+window.connectDevice = async function () {
+  await origConnect();
+  if (writer) await sendCommand('sketch info');
+};
+document.getElementById('connect').onclick = window.connectDevice;
 
 setConnected(false);
 log('ready. load a sketch + connect the device.', 'evt');

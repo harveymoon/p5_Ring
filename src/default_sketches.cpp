@@ -281,54 +281,78 @@ function draw() {
   pop();
 })JS";
 
-static const char EX_SHAKE[] = R"JS(// shake.js — accel-driven particle system
+static const char EX_SHAKE[] = R"JS(// shake.js — bouncing balls in a circular arena
 //
-// Particles drift with gravity. A hard shake (|accel| > 1.4 g) kicks
-// every particle in a random direction. Damping + bouncing edges.
+// Tilt rolls the balls (gravity follows tilt). Shake jolts them all.
+// They reflect off the round wall with energy loss.
+//
+// Shake detection compares this frame's accel to last frame's (jerk).
+// That avoids false triggers from steady gravity.
 
-let parts = [];
-let N = 40;
+let balls = [];
+let N = 12;
+let prevAX = 0;
+let prevAY = 0;
 
 function setup() {
   for (let i = 0; i < N; i++) {
-    parts.push({ x: 120, y: 120, vx: 0, vy: 0, h: i * 9 });
+    let a = i * (TWO_PI / N);
+    balls.push({
+      x: 120 + cos(a) * 40,
+      y: 120 + sin(a) * 40,
+      vx: 0, vy: 0
+    });
   }
 }
 
 function draw() {
-  // Alpha < 255 in background = fading trails.
-  background(10, 12, 20, 200);
+  background(8, 8, 18);
 
-  // Shake magnitude.
-  let shake = sqrt(accelX * accelX + accelY * accelY);
+  // Arena ring.
+  noFill();
+  stroke(themeR / 5, themeG / 5, themeB / 5);
+  strokeWeight(1);
+  circle(120, 120, 220);
+
+  // Jerk = change in accel since last frame.
+  let jerk = abs(accelX - prevAX) + abs(accelY - prevAY);
+  prevAX = accelX;
+  prevAY = accelY;
   let kick = 0;
-  if (shake > 1.4) { kick = (shake - 1.4) * 6; }
+  if (jerk > 0.5) { kick = jerk * 5; }
 
   noStroke();
-  for (let i = 0; i < N; i++) {
-    let p = parts[i];
+  fill(themeR, themeG, themeB);
 
-    // Random kick on shake.
+  for (let i = 0; i < N; i++) {
+    let b = balls[i];
+
     if (kick > 0) {
-      p.vx = p.vx + (random(-1, 1)) * kick;
-      p.vy = p.vy + (random(-1, 1)) * kick;
+      b.vx = b.vx + (random(-1, 1)) * kick;
+      b.vy = b.vy + (random(-1, 1)) * kick;
     }
 
-    // Drag + gravity.
-    p.vx = p.vx * 0.94 + accelX * 0.3;
-    p.vy = p.vy * 0.94 + accelY * 0.3;
-    p.x = p.x + p.vx;
-    p.y = p.y + p.vy;
+    // Gravity from tilt + friction.
+    b.vx = b.vx * 0.95 + accelX * 0.5;
+    b.vy = b.vy * 0.95 + accelY * 0.5;
 
-    // Bounce off edges.
-    if (p.x < 10 || p.x > 230) { p.vx = -p.vx * 0.5; }
-    if (p.y < 10 || p.y > 230) { p.vy = -p.vy * 0.5; }
+    b.x = b.x + b.vx;
+    b.y = b.y + b.vy;
 
-    // Color cycles by hue + time.
-    let r = (((p.h + frameCount) * 1.4) % 240);
-    let g = (((p.h + frameCount) * 0.6) % 240);
-    fill(150 + r * 0.4, 100 + g * 0.5, 220);
-    circle(p.x, p.y, 7);
+    // Reflect off the circular wall (radius 105).
+    let dx = b.x - 120;
+    let dy = b.y - 120;
+    let d2 = dx * dx + dy * dy;
+    if (d2 > 105 * 105) {
+      let d = sqrt(d2);
+      b.x = 120 + dx * 105 / d;
+      b.y = 120 + dy * 105 / d;
+      let dot = (b.vx * dx + b.vy * dy) / d2;
+      b.vx = (b.vx - 2 * dot * dx) * 0.6;
+      b.vy = (b.vy - 2 * dot * dy) * 0.6;
+    }
+
+    circle(b.x, b.y, 12);
   }
 })JS";
 

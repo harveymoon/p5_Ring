@@ -1,58 +1,84 @@
-// shake.js — accel-driven particle system
+// shake.js — bouncing balls in a circular arena
 //
-// Particles drift around based on the accelerometer. When you shake the
-// device hard, the shake threshold is crossed and every particle gets a
-// random kick — like throwing them in the air. They settle as motion
-// dampens.
+// Tilt to roll the balls around (gravity follows tilt). Shake the device
+// and all of them jolt at once. They reflect off the round wall with some
+// energy loss.
 //
-// Demonstrates: particle state in an array, per-frame damping, sensor
-// thresholding, color cycling via frameCount.
+// Demonstrates: a useful "shake event" pattern — compare the current
+// accelerometer reading against the previous frame's, and trigger when
+// the change (jerk) crosses a threshold. This avoids false positives
+// from steady gravity, which the previous version of this sketch had.
 
-let parts = [];   // each entry: { x, y, vx, vy, h (hue offset) }
-let N = 40;
+let balls = [];
+let N = 12;             // small enough to stay smooth on the on-device VM
+let prevAX = 0;         // last frame's accel — used to detect shake
+let prevAY = 0;
 
 function setup() {
-  // All particles start at the canvas center, no velocity.
+  // Scatter balls evenly around a small ring near the center.
   for (let i = 0; i < N; i++) {
-    parts.push({ x: 120, y: 120, vx: 0, vy: 0, h: i * 9 });
+    let a = i * (TWO_PI / N);
+    balls.push({
+      x: 120 + cos(a) * 40,
+      y: 120 + sin(a) * 40,
+      vx: 0,
+      vy: 0
+    });
   }
 }
 
 function draw() {
-  // Slight alpha on background = motion trails (each old frame fades).
-  background(10, 12, 20, 200);
+  background(8, 8, 18);
 
-  // Total tilt magnitude. Above ~1.4 g means "you're shaking it".
-  let shake = sqrt(accelX * accelX + accelY * accelY);
+  // Faint ring marking the arena boundary.
+  noFill();
+  stroke(themeR / 5, themeG / 5, themeB / 5);
+  strokeWeight(1);
+  circle(120, 120, 220);
+
+  // Shake detection: how much did the accel vector move since last frame?
+  // Steady gravity gives ~0 here; only real motion (jerk) crosses the gate.
+  let jerk = abs(accelX - prevAX) + abs(accelY - prevAY);
+  prevAX = accelX;
+  prevAY = accelY;
   let kick = 0;
-  if (shake > 1.4) { kick = (shake - 1.4) * 6; }   // scale into a usable range
+  if (jerk > 0.5) { kick = jerk * 5; }
 
   noStroke();
-  for (let i = 0; i < N; i++) {
-    let p = parts[i];
+  fill(themeR, themeG, themeB);
 
-    // On a shake, jitter each particle randomly — that's the "explosion".
+  for (let i = 0; i < N; i++) {
+    let b = balls[i];
+
+    // On a real shake, give every ball a random impulse.
     if (kick > 0) {
-      p.vx = p.vx + (random(-1, 1)) * kick;
-      p.vy = p.vy + (random(-1, 1)) * kick;
+      b.vx = b.vx + (random(-1, 1)) * kick;
+      b.vy = b.vy + (random(-1, 1)) * kick;
     }
 
-    // Drag (multiply by 0.94 each frame) + steady pull from gravity.
-    p.vx = p.vx * 0.94 + accelX * 0.3;
-    p.vy = p.vy * 0.94 + accelY * 0.3;
+    // Gravity from the tilt vector + friction.
+    b.vx = b.vx * 0.95 + accelX * 0.5;
+    b.vy = b.vy * 0.95 + accelY * 0.5;
 
-    // Integrate velocity.
-    p.x = p.x + p.vx;
-    p.y = p.y + p.vy;
+    // Integrate position.
+    b.x = b.x + b.vx;
+    b.y = b.y + b.vy;
 
-    // Bounce off the screen edges.
-    if (p.x < 10 || p.x > 230) { p.vx = -p.vx * 0.5; }
-    if (p.y < 10 || p.y > 230) { p.vy = -p.vy * 0.5; }
+    // Reflect off the circular wall (radius 105 from center).
+    let dx = b.x - 120;
+    let dy = b.y - 120;
+    let d2 = dx * dx + dy * dy;
+    if (d2 > 105 * 105) {
+      let d = sqrt(d2);
+      // Snap back inside the boundary.
+      b.x = 120 + dx * 105 / d;
+      b.y = 120 + dy * 105 / d;
+      // Reflect velocity across the wall normal, with 60% restitution.
+      let dot = (b.vx * dx + b.vy * dy) / d2;
+      b.vx = (b.vx - 2 * dot * dx) * 0.6;
+      b.vy = (b.vy - 2 * dot * dy) * 0.6;
+    }
 
-    // Color cycles based on hue offset + time.
-    let r = (((p.h + frameCount) * 1.4) % 240);
-    let g = (((p.h + frameCount) * 0.6) % 240);
-    fill(150 + r * 0.4, 100 + g * 0.5, 220);
-    circle(p.x, p.y, 7);
+    circle(b.x, b.y, 12);
   }
 }
