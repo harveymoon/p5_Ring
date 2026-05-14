@@ -34,7 +34,7 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    max-width: 1040px;
+    max-width: 1480px;
     margin: 0 auto;
     padding: 28px 32px 24px;
   }
@@ -42,7 +42,11 @@
   footer { flex-shrink: 0; }
 
   /* ---- Header ---- */
-  header { display: flex; align-items: center; gap: 14px; padding-bottom: 18px; }
+  header { display: flex; align-items: center; gap: 14px; padding-bottom: 18px; flex-wrap: wrap; }
+  .header-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .header-actions .btn { padding: 6px 12px; font-size: 12.5px; }
+  /* connect / disconnect are mutually exclusive — show only the relevant one. */
+  body.connected #connect, body:not(.connected) #disconnect { display: none; }
   .badge {
     width: 32px; height: 32px; border-radius: 50%;
     background: linear-gradient(135deg, var(--accent), var(--accent-dim));
@@ -53,7 +57,7 @@
   .title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
   .subtitle { color: var(--ink-dim); font-size: 12.5px; }
   .pill {
-    margin-left: auto; padding: 6px 12px; border-radius: 999px;
+    padding: 6px 12px; border-radius: 999px;
     background: var(--bg-elev); border: 1px solid var(--line);
     color: var(--ink-dim); font-size: 12.5px;
     display: inline-flex; align-items: center; gap: 8px;
@@ -178,9 +182,6 @@
   .show-in-sketch, .show-in-face { display: none; }
   body:not(.face-mode) .show-in-sketch { display: block; }
   body.face-mode .show-in-face         { display: block; }
-
-  /* Mode toggle row inside the Device card. */
-  .mode-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 
   /* Gated cards — dimmed + non-interactive until the device is connected. */
   .gated { transition: opacity 0.2s, filter 0.2s; }
@@ -320,14 +321,6 @@
   }
   .cmd-row input:focus { outline: none; border-color: var(--accent-dim); }
 
-  .stat-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-    margin-top: 8px;
-  }
-  .stat { padding: 10px; border-radius: 8px; background: var(--bg-input); border: 1px solid var(--line); }
-  .stat .v { font-size: 18px; font-weight: 600; font-family: var(--mono); }
-  .stat .k { font-size: 10.5px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
-
   footer {
     color: var(--ink-faint); font-size: 11.5px; padding-top: 20px;
     border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 12px; margin-top: 16px;
@@ -371,7 +364,12 @@
     <div class="title">Q-Ring companion</div>
     <div class="subtitle">load a sketch, preview, push to device</div>
   </div>
-  <div class="pill" id="dev-pill"><span class="dot"></span><span id="dev-status">not connected</span></div>
+  <div class="header-actions">
+    <button class="btn gated" id="sketch-toggle" title="toggle sketch runner vs fallback face">Sketch: ON</button>
+    <button class="btn primary" id="connect">Connect Q-Ring…</button>
+    <button class="btn" id="disconnect">Disconnect</button>
+    <div class="pill" id="dev-pill"><span class="dot"></span><span id="dev-status">not connected</span></div>
+  </div>
 </header>
 
 <nav class="tabs">
@@ -383,37 +381,31 @@
   <!-- =================== WORKSPACE =================== -->
   <div class="tab-panel active" id="tab-workspace">
     <div id="capability-banner" class="banner" style="display:none"></div>
+    <div class="gate-hint">Plug Q-Ring into a USB-C port and click <strong>Connect Q-Ring…</strong> above to unlock the sketch + log panes.</div>
 
-    <!-- Device (always on top, always interactive — the gate) -->
-    <div class="card">
+    <!-- Theme color — visible in both sketch and face modes, since sketches
+         consume it via themeR/themeG/themeB. -->
+    <div class="card gated">
       <div class="card-head">
-        <div class="card-title">Device</div>
-        <div class="card-meta" id="device-meta">—</div>
+        <div class="card-title">Theme</div>
+        <div class="card-meta">accent color · used by sketches and the fallback face</div>
       </div>
-      <div class="btn-row">
-        <button class="btn primary" id="connect">Connect Q-Ring…</button>
-        <button class="btn" id="disconnect" disabled>Disconnect</button>
+      <div class="ctrl-row">
+        <div class="ctrl-label">Color</div>
+        <input type="color" id="accent" value="#00c8ff" />
+        <div class="ctrl-readout" id="accent-val">#00C8FF</div>
       </div>
-      <div class="stat-grid">
-        <div class="stat"><div class="v" id="stat-uploads">0</div><div class="k">uploads</div></div>
-        <div class="stat"><div class="v" id="stat-errors">0</div><div class="k">errors</div></div>
-        <div class="stat"><div class="v" id="stat-bytes">0</div><div class="k">last bytes</div></div>
-      </div>
-      <div class="mode-row gated">
-        <div class="ctrl-label">Mode</div>
-        <button class="btn" id="sketch-toggle" title="toggle sketch runner vs fallback face">Sketch: ON</button>
-      </div>
-      <div class="gate-hint">Plug Q-Ring into a USB-C port and connect to unlock the sketch + log panes.</div>
+      <div class="ctrl-note">Exposed to sketches as <code>themeR</code> / <code>themeG</code> / <code>themeB</code> (0–255 each), and used to tint the fallback face. Persists to <code>/sketches/.settings</code>.</div>
     </div>
 
     <!-- Face controls — visible only when sketch is OFF (fallback face is running). -->
     <div class="card gated show-in-face">
       <div class="card-head">
-        <div class="card-title">Controls</div>
+        <div class="card-title">Face</div>
         <div class="card-meta">applies immediately · saved across boots</div>
       </div>
       <div class="ctrl-row">
-        <div class="ctrl-label">Face</div>
+        <div class="ctrl-label">State</div>
         <div class="btn-row face-btns" id="face-btns"></div>
       </div>
       <div class="ctrl-row">
@@ -421,12 +413,7 @@
         <input type="range" id="brightness" min="0" max="100" value="80" />
         <div class="ctrl-readout" id="brightness-val">80</div>
       </div>
-      <div class="ctrl-row">
-        <div class="ctrl-label">Color</div>
-        <input type="color" id="accent" value="#00c8ff" />
-        <div class="ctrl-readout" id="accent-val">#00C8FF</div>
-      </div>
-      <div class="ctrl-note">Face state, brightness, and color all apply to the fallback face. The color is also exposed to sketches as <code>themeR</code> / <code>themeG</code> / <code>themeB</code>. All three settings persist to <code>/sketches/.settings</code>.</div>
+      <div class="ctrl-note">Face state and brightness apply to the fallback face and persist to <code>/sketches/.settings</code>.</div>
     </div>
 
     <!-- Sketch — visible only when sketch is ON. -->
@@ -682,10 +669,10 @@ function draw() {
   "shapes": "// shapes.js — pure-drawing demo\n//\n// Shows off all the primitives + nested transforms (push/pop, rotate).\n// No sensor input, no autoRotate — the artwork stays put no matter how\n// you hold the device. A good template if you want to design a fixed\n// composition that doesn't react to tilt.\n\nfunction setup() {\n  // Nothing to set up — defaults are fine (width=height=240, no fill alpha).\n}\n\nfunction draw() {\n  // Repaint each frame so we don't accumulate trails.\n  background(10, 8, 22);\n\n  // Save the current transform, then move the origin to the canvas center.\n  // After this point, (0,0) means \"middle of the screen\".\n  push();\n  translate(120, 120);\n\n  // A slowly-advancing time variable used to drive rotations.\n  let t = frameCount * 0.012;\n\n  // Outer ring — stroke only (noFill), 1 px wide cyan circle, 200 px wide.\n  noFill();\n  stroke(80, 160, 220, 180);   // 4th arg is alpha (approximated on device)\n  strokeWeight(1);\n  circle(0, 0, 200);\n\n  // Petals: 8 ellipses arranged in a ring, each rotated 45° from the last.\n  // Each iteration we push/rotate/draw/pop so the rotation doesn't carry\n  // over to the next iteration.\n  for (let i = 0; i < 8; i++) {\n    push();\n    rotate(t + i * (PI / 4));               // 8 evenly spaced angles\n    noStroke();\n    fill(120 + i * 14, 100 + i * 16, 220);  // gradient blue-purple\n    ellipse(0, -60, 30, 60);                // petal: 30 wide, 60 tall, 60 px out\n    pop();\n  }\n\n  // Counter-rotating ring of 6 triangles, spinning the other way.\n  for (let i = 0; i < 6; i++) {\n    push();\n    rotate(-t * 1.5 + i * (PI / 3));\n    fill(255, 180, 80);\n    noStroke();\n    triangle(0, -36, -8, -22, 8, -22);      // small upward triangle\n    pop();\n  }\n\n  // Center triangle, spinning faster than the others.\n  push();\n  rotate(t * 2.2);\n  fill(255, 220, 100);\n  noStroke();\n  triangle(0, -16, -14, 10, 14, 10);\n  pop();\n\n  // Four tiny white dots at the cardinal directions (top/right/bottom/left).\n  noStroke();\n  fill(220, 240, 255);\n  for (let i = 0; i < 4; i++) {\n    push();\n    rotate(i * HALF_PI);   // 0, 90, 180, 270 degrees\n    circle(0, -88, 4);     // dot 88 px from center\n    pop();\n  }\n\n  // Restore the original (un-translated) transform.\n  pop();\n}\n",
   "tilt": "// tilt.js — auto-rotate demo\n//\n// By default Q-Ring sketches stay put when you tilt the device — handy\n// for fixed compositions. Calling autoRotate() in setup() opts in to\n// gravity-aware behavior: the canvas turns so \"up\" on the artwork always\n// matches real-world up.\n//\n// Try tilting the device while this is running — the triangle keeps\n// pointing skyward.\n\nfunction setup() {\n  // Tell the firmware to rotate the canvas based on the accelerometer.\n  // (Once enabled, it stays on until you call noAutoRotate() or load\n  // another sketch.)\n  autoRotate();\n}\n\nfunction draw() {\n  background(8, 8, 24);\n\n  // Move origin to center, then draw an upward-pointing triangle.\n  push();\n  translate(120, 120);\n\n  noStroke();\n  fill(255, 200, 80);                  // bright yellow outer triangle\n  triangle(0, -60, -40, 40, 40, 40);\n\n  // Inner shadow triangle to suggest depth.\n  fill(20, 8, 8);\n  triangle(0, -50, -28, 32, 28, 32);\n\n  pop();\n\n  // Label so it's obvious which way the artwork is pointing.\n  fill(220, 240, 255);\n  textSize(8);\n  textAlign(CENTER);\n  text(\"UP\", 120, 80);\n}\n",
   "sensors": "// sensors.js — feature showcase\n//\n// Demonstrates: drawing primitives, transforms (push/pop/translate), text,\n// accelerometer readouts, and live frameCount. Tilt the device while it\n// runs — the arrow tracks gravity and the numbers update in real time.\n//\n// Note: this sketch does NOT call autoRotate(), so the canvas stays\n// pinned upright on screen. The arrow alone moves to show direction.\n\nfunction setup() {}\n\nfunction draw() {\n  background(8, 10, 18);\n\n  // Light-blue crosshair — visual reference for the center of the screen.\n  stroke(40, 80, 110);\n  strokeWeight(1);\n  line(0, 120, 240, 120);   // horizontal\n  line(120, 0, 120, 240);   // vertical\n\n  // ─── tilt arrow ───\n  // Move origin to center so positive accelX = right, positive accelY = down.\n  push();\n  translate(width / 2, height / 2);\n  let ax = accelX * 70;             // scale up by 70 for visibility\n  let ay = accelY * 70;\n  stroke(255, 200, 80);\n  strokeWeight(3);\n  line(0, 0, ax, ay);               // shaft of the arrow\n  noStroke();\n  fill(255, 220, 130);\n  circle(ax, ay, 12);               // arrowhead (just a dot for simplicity)\n  fill(255);\n  circle(ax + 3, ay - 3, 4);        // tiny highlight to give it shape\n  pop();\n\n  // ─── orbit of small dots ───\n  // Six dots evenly spaced around a circle, all rotating together.\n  push();\n  translate(width / 2, height / 2);\n  noStroke();\n  for (let i = 0; i < 6; i++) {\n    let a = frameCount * 0.03 + i * 1.0472;   // 1.0472 ≈ 60°\n    fill(80 + i * 25, 200, 255);              // gradient blue\n    circle(cos(a) * 95, sin(a) * 95, 7);\n  }\n  pop();\n\n  // ─── live readout text ───\n  // mJS forbids \"string + number\" implicit concatenation, so wrap each\n  // number with str(). round(x*100)/100 gives 2-decimal display.\n  fill(220, 230, 240);\n  textSize(8);\n  textAlign(LEFT);\n  text(\"accelX \" + str(round(accelX * 100) / 100), 70, 38);\n  text(\"accelY \" + str(round(accelY * 100) / 100), 70, 50);\n  text(\"accelZ \" + str(round(accelZ * 100) / 100), 70, 62);\n\n  textAlign(CENTER);\n  text(\"frame \" + str(frameCount), 120, 205);\n}\n",
-  "rain": "// rain.js — particle system, gravity-aware\n//\n// A simple \"falling rain\" effect. Each drop has a position (x, y), a\n// downward velocity (vy), and a length. Tilt the device left/right and\n// the rain leans with gravity (accelX/accelY are read every frame).\n//\n// Demonstrates: arrays of small objects, setup-time initialization,\n// per-frame state mutation, sensor input without autoRotate().\n\nlet drops = [];   // array of drop objects, populated in setup()\nlet N = 35;   // reduced — the on-device interpreter has FFI overhead per call       // how many drops to simulate\n\nfunction setup() {\n  // Pre-allocate every drop once (much cheaper than creating new objects\n  // every frame inside draw()).\n  for (let i = 0; i < N; i++) {\n    drops.push({\n      x: random(0, 240),\n      y: random(0, 240),       // start scattered across the screen\n      vy: random(2, 5),        // each drop falls at its own speed\n      len: random(6, 16)       // and has its own visual length\n    });\n  }\n}\n\nfunction draw() {\n  // Deep blue background — repaint each frame so old drops don't trail.\n  background(6, 8, 18);\n\n  // Light cyan strokes for the drops themselves.\n  stroke(120, 200, 255, 180);\n  strokeWeight(1);\n\n  for (let i = 0; i < N; i++) {\n    let d = drops[i];\n\n    // Apply gravity-derived offsets:\n    //   accelX pushes drops sideways (~ wind)\n    //   accelY adds to the constant fall speed\n    d.x = d.x + accelX * 1.2;\n    d.y = d.y + d.vy + accelY * 0.8;\n\n    // Each drop is a short vertical line.\n    line(d.x, d.y, d.x, d.y + d.len);\n\n    // Wrap around the edges so the field never empties out.\n    if (d.y > 240) { d.y = -10; d.x = random(0, 240); }\n    if (d.x < 0)   { d.x = 240; }\n    if (d.x > 240) { d.x = 0; }\n  }\n}\n",
+  "rain": "// rain.js — particle system, gravity-aware\n//\n// A simple \"falling rain\" effect. Each drop has a position (x, y), a\n// downward velocity (vy), and a length. autoRotate() keeps the rain\n// falling toward real-world down no matter how you hold the device.\n//\n// Demonstrates: arrays of small objects, setup-time initialization,\n// per-frame state mutation, autoRotate().\n\nlet drops = [];   // array of drop objects, populated in setup()\nlet N = 35;   // reduced — the on-device interpreter has FFI overhead per call       // how many drops to simulate\n\nfunction setup() {\n  // Canvas tracks gravity — \"down\" on screen is always real-world down.\n  autoRotate();\n\n  // Pre-allocate every drop once (much cheaper than creating new objects\n  // every frame inside draw()).\n  for (let i = 0; i < N; i++) {\n    drops.push({\n      x: random(0, 240),\n      y: random(0, 240),       // start scattered across the screen\n      vy: random(2, 5),        // each drop falls at its own speed\n      len: random(6, 16)       // and has its own visual length\n    });\n  }\n}\n\nfunction draw() {\n  // Deep blue background — repaint each frame so old drops don't trail.\n  background(6, 8, 18);\n\n  // Light cyan strokes for the drops themselves.\n  stroke(120, 200, 255, 180);\n  strokeWeight(1);\n\n  for (let i = 0; i < N; i++) {\n    let d = drops[i];\n\n    // Drops fall straight down on the rotated canvas.\n    d.y = d.y + d.vy;\n\n    // Each drop is a short vertical line.\n    line(d.x, d.y, d.x, d.y + d.len);\n\n    // Wrap around the bottom so the field never empties out.\n    if (d.y > 240) { d.y = -10; d.x = random(0, 240); }\n  }\n}\n",
   "wave": "// wave.js — animated sine wave field\n//\n// Two overlapping sine waves of different frequencies and colors, with a\n// white dot riding the top wave. The phase scrolls forever via frameCount.\n//\n// Demonstrates: for-loops, sin() for animation, multiple stroke colors,\n// \"scrolling\" by reading frameCount.\n\nfunction setup() {}\n\nfunction draw() {\n  // Dark plum background.\n  background(10, 6, 24);\n\n  // We're drawing 1-px points along the wave, so we use stroke (not fill).\n  noFill();\n  strokeWeight(2);\n\n  // `t` is the time-phase. Bigger multiplier = faster motion.\n  let t = frameCount * 0.04;\n\n  // ── upper wave: cyan ──\n  // Step across the screen 4 px at a time (cheaper than every pixel).\n  // y = base + amplitude * sin(spatial_frequency * x + time_phase)\n  stroke(120, 220, 255);\n  for (let x = 0; x < 240; x = x + 4) {\n    point(x, 110 + sin(x * 0.05 + t) * 30);\n  }\n\n  // ── lower wave: pink, different frequency, scrolls the other way ──\n  stroke(255, 140, 180);\n  for (let x = 0; x < 240; x = x + 4) {\n    point(x, 150 + sin(x * 0.06 - t * 1.4) * 24);\n  }\n\n  // ── the ball rides the upper wave ──\n  // It moves left-to-right and wraps around every 200 frames.\n  let bx = 20 + ((frameCount * 1.5) % 200);\n  let by = 110 + sin(bx * 0.05 + t) * 30;\n  noStroke();\n  fill(255);\n  circle(bx, by, 8);\n}\n",
   "clock": "// clock.js — analog clock showing time since boot\n//\n// Demonstrates nested rotate/push/pop transforms. The hour, minute, and\n// second hands all start at the same origin and rotate by different\n// amounts each frame. Push/pop isolate each hand's rotation so they\n// don't compound.\n//\n// Note: this is uptime, not wall-clock time — millis() is \"ms since the\n// device booted\", which resets to 0 on power-up. So at first plug-in the\n// clock starts at 12.\n\nfunction setup() {\n  // A clock face is one of those rare cases where you DO want the canvas\n  // to rotate with the device — so \"up\" on the dial always faces up.\n  autoRotate();\n}\n\nfunction draw() {\n  background(12, 8, 20);\n\n  // Seconds elapsed since boot, as a float.\n  let secs = millis() / 1000;\n\n  // Move origin to the canvas center; every later coord is relative to it.\n  push();\n  translate(120, 120);\n\n  // ── dial: outline + tick marks ──\n  noFill();\n  stroke(60, 80, 110);\n  strokeWeight(2);\n  circle(0, 0, 200);\n\n  stroke(120, 160, 200);\n  for (let i = 0; i < 12; i++) {\n    push();\n    rotate(i * (PI / 6));          // 12 hour-positions\n    line(0, -95, 0, -85);          // a short tick near the rim\n    pop();\n  }\n\n  // ── second hand: thin orange ──\n  // 60 seconds = full rotation, so divide secs by 60.\n  push();\n  rotate(secs * (TWO_PI / 60));\n  stroke(255, 160, 80);\n  strokeWeight(2);\n  line(0, 0, 0, -85);\n  pop();\n\n  // ── minute hand: thicker white ──\n  push();\n  rotate((secs / 60) * (TWO_PI / 60));\n  stroke(220, 240, 255);\n  strokeWeight(4);\n  line(0, 0, 0, -65);\n  pop();\n\n  // ── hour hand: thickest, cyan ──\n  push();\n  rotate((secs / 3600) * (TWO_PI / 12));\n  stroke(120, 200, 255);\n  strokeWeight(5);\n  line(0, 0, 0, -42);\n  pop();\n\n  // Center cap covers where all the hands meet.\n  noStroke();\n  fill(255);\n  circle(0, 0, 8);\n\n  pop();\n}\n",
-  "birthday": "// birthday.js — a little cake with flickering candles, made for her birthday.\n//\n// Tilt the device to \"blow\" on the flames — they lean with the tilt.\n// The middle layer + drips pick up the accent color from the picker, so\n// you can match it to her favorite color from the companion app.\n\nlet blow = 0;\n\nfunction setup() {}\n\nfunction draw() {\n  background(15, 5, 22);\n\n  // Smooth the tilt so blowing is gentle, not snappy.\n  blow = blow * 0.88 + accelX * 5;\n\n  // ─── sparkles drifting around the rim ───\n  noStroke();\n  fill(255, 240, 180);\n  for (let i = 0; i < 10; i++) {\n    let a = frameCount * 0.008 + i * (TWO_PI / 10);\n    let r = 100 + sin(frameCount * 0.04 + i * 2) * 4;\n    circle(120 + cos(a) * r, 120 + sin(a) * r, 2);\n  }\n\n  // ─── cake (three layers, theme-colored middle) ───\n  // Bottom — cream\n  fill(255, 220, 200);\n  rect(50, 168, 140, 30);\n  ellipse(120, 168, 140, 18);\n\n  // Middle — accent color\n  fill(themeR, themeG, themeB);\n  rect(65, 138, 110, 30);\n  ellipse(120, 138, 110, 18);\n\n  // Top — cream\n  fill(255, 220, 200);\n  rect(82, 112, 76, 26);\n  ellipse(120, 112, 76, 14);\n\n  // Frosting drips down the bottom layer\n  fill(themeR, themeG, themeB);\n  for (let i = 0; i < 6; i++) {\n    let x = 60 + i * 22;\n    let h = 8 + (i % 3) * 4;\n    rect(x - 4, 168, 8, h);\n    ellipse(x, 168 + h, 8, 6);\n  }\n\n  // ─── candles ───\n  // Three white candles on the top layer.\n  for (let i = 0; i < 3; i++) {\n    let cx = 100 + i * 20;\n    let baseY = 100;\n\n    // Wax\n    fill(255, 240, 240);\n    rect(cx - 2, baseY, 4, 12);\n\n    // Wick stub\n    fill(50, 30, 20);\n    rect(cx - 0.5, baseY - 3, 1, 3);\n\n    // Flame — flickers via sin + leans with the smoothed tilt.\n    let flicker = sin(frameCount * 0.25 + i * 1.7) * 1.2;\n    let tx = blow * 0.35;\n\n    // Outer flame (warm orange)\n    fill(255, 140, 40);\n    ellipse(cx + tx, baseY - 7 + flicker, 5, 10);\n    // Inner core (pale gold)\n    fill(255, 230, 150);\n    ellipse(cx + tx * 0.7, baseY - 6 + flicker, 2, 6);\n  }\n\n  // ─── greeting ───\n  fill(255, 240, 200);\n  textSize(16);\n  textAlign(CENTER);\n  text(\"Happy\", 120, 45);\n  fill(themeR, themeG, themeB);\n  text(\"Birthday!\", 120, 63);\n}\n"
+  "birthday": "// birthday.js — a little cake with flickering candles, made for her birthday.\n//\n// Tilt the device to \"blow\" on the flames — they lean with the tilt.\n// The middle layer + drips pick up the accent color from the picker, so\n// you can match it to her favorite color from the companion app.\n\nlet blow = 0;\n\nfunction setup() {\n  autoRotate();\n}\n\nfunction draw() {\n  background(15, 5, 22);\n\n  // Smooth the tilt so blowing is gentle, not snappy.\n  // EMA: weights must sum to 1 or `blow` accumulates ~8× the input\n  // and the flames slide off their candles.\n  blow = blow * 0.88 + accelX * 5 * 0.12;\n\n  // ─── sparkles drifting around the rim ───\n  noStroke();\n  fill(255, 240, 180);\n  for (let i = 0; i < 10; i++) {\n    let a = frameCount * 0.008 + i * (TWO_PI / 10);\n    let r = 100 + sin(frameCount * 0.04 + i * 2) * 4;\n    circle(120 + cos(a) * r, 120 + sin(a) * r, 2);\n  }\n\n  // ─── cake (three layers, theme-colored middle) ───\n  // Bottom — cream\n  fill(255, 220, 200);\n  rect(50, 168, 140, 30);\n  ellipse(120, 168, 140, 18);\n\n  // Middle — accent color\n  fill(themeR, themeG, themeB);\n  rect(65, 138, 110, 30);\n  ellipse(120, 138, 110, 18);\n\n  // Top — cream\n  fill(255, 220, 200);\n  rect(82, 112, 76, 26);\n  ellipse(120, 112, 76, 14);\n\n  // Frosting drips down the bottom layer\n  fill(themeR, themeG, themeB);\n  for (let i = 0; i < 6; i++) {\n    let x = 60 + i * 22;\n    let h = 8 + (i % 3) * 4;\n    rect(x - 4, 168, 8, h);\n    ellipse(x, 168 + h, 8, 6);\n  }\n\n  // ─── candles ───\n  // Three white candles on the top layer.\n  for (let i = 0; i < 3; i++) {\n    let cx = 100 + i * 20;\n    let baseY = 100;\n\n    // Wax\n    fill(255, 240, 240);\n    rect(cx - 2, baseY, 4, 12);\n\n    // Wick stub\n    fill(50, 30, 20);\n    rect(cx - 0.5, baseY - 3, 1, 3);\n\n    // Flame — flickers via sin + leans with the smoothed tilt.\n    let flicker = sin(frameCount * 0.25 + i * 1.7) * 1.2;\n    let tx = blow * 0.35;\n\n    // Outer flame (warm orange)\n    fill(255, 140, 40);\n    ellipse(cx + tx, baseY - 7 + flicker, 5, 10);\n    // Inner core (pale gold)\n    fill(255, 230, 150);\n    ellipse(cx + tx * 0.7, baseY - 6 + flicker, 2, 6);\n  }\n\n  // ─── greeting ───\n  fill(255, 240, 200);\n  textSize(16);\n  textAlign(CENTER);\n  text(\"Happy\", 120, 45);\n  fill(themeR, themeG, themeB);\n  text(\"Birthday!\", 120, 63);\n}\n"
 }
 </script>
 
@@ -911,6 +898,16 @@ function runLint(src) {
 // =============================================================================
 let p5Instance = null;
 
+// Read the accent <input type="color"> and mirror it onto window.themeR/G/B,
+// matching the globals the firmware exposes to on-device sketches.
+function syncThemeFromPicker() {
+  const el = document.getElementById('accent');
+  const hex = (el && /^#[0-9a-f]{6}$/i.test(el.value)) ? el.value : '#00c8ff';
+  window.themeR = parseInt(hex.slice(1, 3), 16);
+  window.themeG = parseInt(hex.slice(3, 5), 16);
+  window.themeB = parseInt(hex.slice(5, 7), 16);
+}
+
 function startPreviewRender(src) {
   // Wait for p5 if it hasn't loaded yet
   if (typeof p5 === 'undefined') { setTimeout(() => startPreviewRender(src), 100); return; }
@@ -929,6 +926,9 @@ function startPreviewRender(src) {
   window.autoRotate   = function () {};   // no-op in browser preview
   window.noAutoRotate = function () {};
   window.centerOrigin = function () { translate(width / 2, height / 2); };
+  // themeR/G/B mirror the accent color picker — the firmware exposes the
+  // same globals so sketches like birthday.js can theme to the user's color.
+  syncThemeFromPicker();
   // Wipe any prior user setup/draw + stashes
   window.setup = undefined;
   window.draw  = undefined;
@@ -1002,15 +1002,14 @@ function startPreviewRender(src) {
 // Serial (WebSerial)
 // =============================================================================
 let port = null, writer = null, reader = null, readLoopAbort = false;
-let uploads = 0, errors = 0;
 
 function setConnected(on) {
   const pill = document.getElementById('dev-pill');
   pill.classList.toggle('connected', on);
-  document.body.classList.toggle('connected', on);   // gates Sketch + Log panes
+  // body.connected gates the Sketch + Log panes AND drives the
+  // connect/disconnect button visibility in the header.
+  document.body.classList.toggle('connected', on);
   document.getElementById('dev-status').textContent = on ? 'connected' : 'not connected';
-  document.getElementById('connect').disabled = on;
-  document.getElementById('disconnect').disabled = !on;
   document.getElementById('cmd-send').disabled = !on;
 }
 
@@ -1020,9 +1019,6 @@ async function _attachPort(p, silent) {
   port = p;
   await port.open({ baudRate: 115200, bufferSize: 8192 });
   setConnected(true);
-  const info = port.getInfo();
-  document.getElementById('device-meta').textContent =
-    info.usbVendorId ? `VID ${info.usbVendorId.toString(16)} / PID ${info.usbProductId.toString(16)}` : 'connected';
   log(silent ? 'auto-reconnected' : 'device connected', 'ok');
   writer = port.writable.getWriter();
   readLoopAbort = false;
@@ -1129,18 +1125,14 @@ async function writeBytes(bytes) { if (!writer) return false; await writer.write
 async function sendCommand(cmd)  { log(`> ${cmd}`, 'tx'); await writeBytes(enc.encode(cmd + '\n')); }
 
 async function uploadToDevice(devicePath, text) {
-  if (!writer) { log(`(not connected — skipping upload of ${devicePath})`, 'err'); errors++; document.getElementById('stat-errors').textContent = errors; return; }
+  if (!writer) { log(`(not connected — skipping upload of ${devicePath})`, 'err'); return; }
   const body = enc.encode(text);
   try {
     await writeBytes(enc.encode(`UPLOAD ${devicePath} ${body.length}\n`));
     await writeBytes(body);
     await writeBytes(enc.encode('\nEND\n'));
-    uploads++;
-    document.getElementById('stat-uploads').textContent = uploads;
-    document.getElementById('stat-bytes').textContent = body.length;
     log(`pushed ${body.length} bytes → ${devicePath}`, 'ok');
   } catch (e) {
-    errors++; document.getElementById('stat-errors').textContent = errors;
     log(`upload failed: ${e.message}`, 'err');
   }
 }
@@ -1201,6 +1193,7 @@ let accentTimer = null;
 cInput.addEventListener('input', () => {
   const hex = cInput.value;   // "#rrggbb"
   cReadout.textContent = hex.toUpperCase();
+  syncThemeFromPicker();   // live-update preview without a re-eval
   clearTimeout(accentTimer);
   accentTimer = setTimeout(() => sendCommand('color ' + hex.slice(1).toUpperCase()), 120);
 });

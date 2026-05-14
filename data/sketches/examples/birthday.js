@@ -6,13 +6,17 @@
 
 let blow = 0;
 
-function setup() {}
+function setup() {
+  autoRotate();
+}
 
 function draw() {
   background(15, 5, 22);
 
   // Smooth the tilt so blowing is gentle, not snappy.
-  blow = blow * 0.88 + accelX * 5;
+  // EMA: weights must sum to 1 or `blow` accumulates ~8× the input
+  // and the flames slide off their candles.
+  blow = blow * 0.88 + accelX * 5 * 0.12;
 
   // ─── sparkles drifting around the rim ───
   noStroke();
