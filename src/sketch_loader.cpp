@@ -76,6 +76,34 @@ static void _seed_defaults(void) {
         }
     }
     if (new_examples) Serial.printf("[LOADER] seeded %d example(s)\n", new_examples);
+
+    // Prune any /sketches/examples/*.js files that aren't in the current
+    // DEFAULT_EXAMPLES set. Keeps the on-device list in sync with what ships
+    // when example names change (e.g. shake.js → birthday.js).
+    // Collect stale paths first (mutating LittleFS during Dir iteration
+    // invalidates the iterator).
+    String stale[16];
+    int n_stale = 0;
+    {
+        Dir d = LittleFS.openDir("/sketches/examples");
+        while (d.next() && n_stale < 16) {
+            char full[80];
+            snprintf(full, sizeof(full), "/sketches/examples/%s", d.fileName().c_str());
+            bool known = false;
+            for (const DefaultExample* e = DEFAULT_EXAMPLES; e->path; e++) {
+                if (strcmp(e->path, full) == 0) { known = true; break; }
+            }
+            if (!known) stale[n_stale++] = String(full);
+        }
+    }
+    int pruned = 0;
+    for (int i = 0; i < n_stale; i++) {
+        if (LittleFS.remove(stale[i])) {
+            Serial.printf("[LOADER] pruned %s\n", stale[i].c_str());
+            pruned++;
+        }
+    }
+    if (pruned) Serial.printf("[LOADER] pruned %d stale example(s) total\n", pruned);
 }
 
 // =============================================================================

@@ -281,88 +281,79 @@ function draw() {
   pop();
 })JS";
 
-static const char EX_SHAKE[] = R"JS(// shake.js — bouncing balls in a circular arena
-//
-// Tilt rolls the balls (gravity follows tilt). Shake jolts them all.
-// They reflect off the round wall with energy loss.
-//
-// Shake detection compares this frame's accel to last frame's (jerk).
-// That avoids false triggers from steady gravity.
+static const char EX_BIRTHDAY[] = R"JS(// birthday.js — a little cake with flickering candles.
+// Tilt to "blow" on the flames. The middle layer + drips pick up the
+// accent color from the picker, so match it to her favorite color.
 
-let balls = [];
-let N = 12;
-let prevAX = 0;
-let prevAY = 0;
+let blow = 0;
 
-function setup() {
-  for (let i = 0; i < N; i++) {
-    let a = i * (TWO_PI / N);
-    balls.push({
-      x: 120 + cos(a) * 40,
-      y: 120 + sin(a) * 40,
-      vx: 0, vy: 0
-    });
-  }
-}
+function setup() {}
 
 function draw() {
-  background(8, 8, 18);
+  background(15, 5, 22);
+  blow = blow * 0.88 + accelX * 5;
 
-  // Arena ring.
-  noFill();
-  stroke(themeR / 5, themeG / 5, themeB / 5);
-  strokeWeight(1);
-  circle(120, 120, 220);
-
-  // Jerk = change in accel since last frame.
-  let jerk = abs(accelX - prevAX) + abs(accelY - prevAY);
-  prevAX = accelX;
-  prevAY = accelY;
-  let kick = 0;
-  if (jerk > 0.5) { kick = jerk * 5; }
-
+  // sparkles around the rim
   noStroke();
-  fill(themeR, themeG, themeB);
-
-  for (let i = 0; i < N; i++) {
-    let b = balls[i];
-
-    if (kick > 0) {
-      b.vx = b.vx + (random(-1, 1)) * kick;
-      b.vy = b.vy + (random(-1, 1)) * kick;
-    }
-
-    // Gravity from tilt + friction.
-    b.vx = b.vx * 0.95 + accelX * 0.5;
-    b.vy = b.vy * 0.95 + accelY * 0.5;
-
-    b.x = b.x + b.vx;
-    b.y = b.y + b.vy;
-
-    // Reflect off the circular wall (radius 105).
-    let dx = b.x - 120;
-    let dy = b.y - 120;
-    let d2 = dx * dx + dy * dy;
-    if (d2 > 105 * 105) {
-      let d = sqrt(d2);
-      b.x = 120 + dx * 105 / d;
-      b.y = 120 + dy * 105 / d;
-      let dot = (b.vx * dx + b.vy * dy) / d2;
-      b.vx = (b.vx - 2 * dot * dx) * 0.6;
-      b.vy = (b.vy - 2 * dot * dy) * 0.6;
-    }
-
-    circle(b.x, b.y, 12);
+  fill(255, 240, 180);
+  for (let i = 0; i < 10; i++) {
+    let a = frameCount * 0.008 + i * (TWO_PI / 10);
+    let r = 100 + sin(frameCount * 0.04 + i * 2) * 4;
+    circle(120 + cos(a) * r, 120 + sin(a) * r, 2);
   }
+
+  // cake — three layers, theme-colored middle
+  fill(255, 220, 200);
+  rect(50, 168, 140, 30);
+  ellipse(120, 168, 140, 18);
+  fill(themeR, themeG, themeB);
+  rect(65, 138, 110, 30);
+  ellipse(120, 138, 110, 18);
+  fill(255, 220, 200);
+  rect(82, 112, 76, 26);
+  ellipse(120, 112, 76, 14);
+
+  // frosting drips
+  fill(themeR, themeG, themeB);
+  for (let i = 0; i < 6; i++) {
+    let x = 60 + i * 22;
+    let h = 8 + (i % 3) * 4;
+    rect(x - 4, 168, 8, h);
+    ellipse(x, 168 + h, 8, 6);
+  }
+
+  // candles
+  for (let i = 0; i < 3; i++) {
+    let cx = 100 + i * 20;
+    let baseY = 100;
+    fill(255, 240, 240);
+    rect(cx - 2, baseY, 4, 12);
+    fill(50, 30, 20);
+    rect(cx - 0.5, baseY - 3, 1, 3);
+    let flicker = sin(frameCount * 0.25 + i * 1.7) * 1.2;
+    let tx = blow * 0.35;
+    fill(255, 140, 40);
+    ellipse(cx + tx, baseY - 7 + flicker, 5, 10);
+    fill(255, 230, 150);
+    ellipse(cx + tx * 0.7, baseY - 6 + flicker, 2, 6);
+  }
+
+  // greeting
+  fill(255, 240, 200);
+  textSize(16);
+  textAlign(CENTER);
+  text("Happy", 120, 45);
+  fill(themeR, themeG, themeB);
+  text("Birthday!", 120, 63);
 })JS";
 
 const DefaultExample DEFAULT_EXAMPLES[] = {
-    { "/sketches/examples/shapes.js",  EX_SHAPES },
-    { "/sketches/examples/tilt.js",    EX_TILT },
-    { "/sketches/examples/sensors.js", EX_SENSORS },
-    { "/sketches/examples/rain.js",    EX_RAIN },
-    { "/sketches/examples/wave.js",    EX_WAVE },
-    { "/sketches/examples/clock.js",   EX_CLOCK },
-    { "/sketches/examples/shake.js",   EX_SHAKE },
+    { "/sketches/examples/shapes.js",   EX_SHAPES },
+    { "/sketches/examples/tilt.js",     EX_TILT },
+    { "/sketches/examples/sensors.js",  EX_SENSORS },
+    { "/sketches/examples/rain.js",     EX_RAIN },
+    { "/sketches/examples/wave.js",     EX_WAVE },
+    { "/sketches/examples/clock.js",    EX_CLOCK },
+    { "/sketches/examples/birthday.js", EX_BIRTHDAY },
     { nullptr, nullptr }
 };
