@@ -395,6 +395,8 @@ void face_set_rotation(uint8_t r) {
     _rotation_auto = false;
 }
 
+bool face_is_rotation_auto() { return _rotation_auto; }
+
 void face_set_rotation_auto(bool enable) {
     // Snap the smoothed angle to the current physical orientation when
     // auto-rotate is (re-)enabled. Without this, _smooth_angle holds whatever

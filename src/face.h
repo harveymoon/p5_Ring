@@ -34,6 +34,7 @@ bool face_alert_active();
 void face_set_brightness(uint8_t v);
 void face_set_rotation(uint8_t r);
 void face_set_rotation_auto(bool enable);
+bool face_is_rotation_auto();
 
 // Set the face's accent color (iris / brow / mouth / sleeping / listening
 // pulse). Triggers a re-apply of the current state so the transition is

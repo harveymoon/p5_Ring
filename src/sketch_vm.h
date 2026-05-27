@@ -28,3 +28,5 @@ const char* sketch_vm_error_text(void);
 void        sketch_vm_clear_error(void);
 
 uint32_t sketch_vm_heap_free(void);
+uint32_t sketch_vm_last_dt_ms(void);
+uint32_t sketch_vm_last_blit_ms(void);

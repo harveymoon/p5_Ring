@@ -22,6 +22,7 @@
 // =============================================================================
 
 #include <Arduino.h>
+#include <hardware/clocks.h>
 #include "config.h"
 #include "display_config.h"
 #include "face.h"
@@ -66,9 +67,10 @@ static void _handle_command(const char* cmd) {
         else if (strcmp(arg, "off")    == 0) { sketch_vm_set_active(false); Serial.println("[CMD] sketch -> off (fallback face)"); }
         else if (strcmp(arg, "reload") == 0) { sketch_loader_force_reload(); Serial.println("[CMD] reload queued"); }
         else if (strcmp(arg, "info")   == 0) {
-            Serial.printf("[INFO] active=%d  error=%d  crc=0x%08lx  heap_free=%u\n",
+            Serial.printf("[INFO] active=%d  error=%d  crc=0x%08lx  heap_free=%u  draw_ms=%u  blit_ms=%u\n",
                 (int)sketch_vm_active(), (int)sketch_vm_has_error(),
-                (unsigned long)sketch_loader_current_crc(), sketch_vm_heap_free());
+                (unsigned long)sketch_loader_current_crc(), sketch_vm_heap_free(),
+                (unsigned)sketch_vm_last_dt_ms(), (unsigned)sketch_vm_last_blit_ms());
             if (sketch_vm_has_error()) Serial.printf("[INFO] last_error: %s\n", sketch_vm_error_text());
         }
         else if (strcmp(arg, "list") == 0) {
@@ -95,6 +97,23 @@ static void _handle_command(const char* cmd) {
 
     if (strcmp(cmd, "eject") == 0) {
         sketch_loader_force_reload();
+        return;
+    }
+    if (strcmp(cmd, "spi_test") == 0) {
+        LGFX_Sprite* cv = face_get_canvas();
+        lgfx::LGFX_Device* lcd = face_get_lcd();
+        uint32_t t0 = millis();
+        for (int i = 0; i < 8; i++) lcd->fillScreen(0x0000);
+        uint32_t fill_ms = (millis() - t0) / 8;
+        t0 = millis();
+        for (int i = 0; i < 8; i++) cv->pushSprite(lcd, 0, 0);
+        uint32_t push_ms = (millis() - t0) / 8;
+        // Implied SPI MHz from pushSprite: 115200 bytes * 8 bits / push_ms
+        uint32_t implied_khz = (push_ms > 0) ? (115200UL * 8UL / push_ms) : 0;
+        uint32_t peri_hz = clock_get_hz(clk_peri);
+        Serial.printf("[SPI_TEST] fillScreen=%lums  pushSprite=%lums  implied_SPI~%lukHz  clk_peri=%luMHz\n",
+            (unsigned long)fill_ms, (unsigned long)push_ms,
+            (unsigned long)implied_khz, (unsigned long)(peri_hz / 1000000));
         return;
     }
     if (strcmp(cmd, "clean") == 0) {
@@ -219,6 +238,16 @@ static void _serial_tick() {
 #endif
 
 void setup() {
+    // clk_peri defaults to 48 MHz (USB PLL) in this Arduino build, capping SPI
+    // at 24 MHz. Re-source from clk_sys (125 MHz) before any peripheral init so
+    // SPI reaches 62.5 MHz. USB is unaffected — it runs on clk_usb separately.
+    {
+        uint32_t sys_hz = clock_get_hz(clk_sys);
+        clock_configure(clk_peri, 0,
+                        CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLK_SYS,
+                        sys_hz, sys_hz);
+    }
+
     Serial.begin(115200);
     delay(3000);
 

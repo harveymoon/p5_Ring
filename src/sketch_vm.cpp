@@ -21,6 +21,7 @@ static char        _err_text[256] = {0};
 static uint32_t    _frame_count  = 0;
 static uint32_t    _slow_frames  = 0;
 static uint32_t    _last_dt_ms   = 0;
+static uint32_t    _last_blit_ms = 0;
 static uint32_t    _last_tick_ms = 0;
 
 static char _src_buf[SKETCH_SRC_MAX];
@@ -146,6 +147,9 @@ bool sketch_vm_active(void)         { return _active && !_has_error; }
 bool sketch_vm_has_error(void)      { return _has_error; }
 const char* sketch_vm_error_text(void) { return _err_text; }
 
+uint32_t sketch_vm_last_dt_ms(void)   { return _last_dt_ms; }
+uint32_t sketch_vm_last_blit_ms(void) { return _last_blit_ms; }
+
 uint32_t sketch_vm_heap_free(void) {
     extern int rp2040_free_heap();
     // Use the core's helper if available
@@ -200,11 +204,18 @@ void sketch_vm_tick(void) {
     // Update IMU-smoothed rotation angle (same path the fallback face uses)
     face_update_rotation_smoothing(dt);
 
-    // Blit canvas with rotation
+    // Blit canvas — skip the per-pixel rotation transform when the sketch
+    // called noAutoRotate(), since identity pushRotateZoom costs ~15 ms/frame.
     LGFX_Sprite* cv = face_get_canvas();
     lgfx::LGFX_Device* lcd = face_get_lcd();
     if (cv && lcd) {
-        cv->pushRotateZoom(lcd, 120, 120, face_get_rotation_angle(), 1.0f, 1.0f);
+        uint32_t tb = millis();
+        if (face_is_rotation_auto()) {
+            cv->pushRotateZoom(lcd, 120, 120, face_get_rotation_angle(), 1.0f, 1.0f);
+        } else {
+            cv->pushSprite(lcd, 0, 0);
+        }
+        _last_blit_ms = millis() - tb;
     }
 
     // Quick GC opportunity between frames

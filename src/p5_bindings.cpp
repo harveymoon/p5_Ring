@@ -63,6 +63,40 @@ struct State {
 static State    _st;
 static LGFX_Sprite* _cv = nullptr;
 
+// =============================================================================
+// Display-list caching — record draw calls to a flat byte buffer; replay in
+// pure C to bypass mJS tree-walk overhead on frames where geometry is unchanged.
+//
+// Usage in JS:  dlRecord(); /* draw normally */ dlEnd();
+//               // later frames: dlPlay(); instead of full draw
+// =============================================================================
+#define DL_BUF_SIZE 4096
+static uint8_t  _dl_buf[DL_BUF_SIZE];
+static int      _dl_len       = 0;
+static bool     _dl_recording = false;
+
+enum DLCmd : uint8_t {
+    DLC_BG      = 1,  // u16: bg rgb565
+    DLC_FILL    = 2,  // u16: fill rgb565
+    DLC_NO_FILL = 3,
+    DLC_STROKE  = 4,  // u16: stroke rgb565
+    DLC_NO_STR  = 5,
+    DLC_SW      = 6,  // u8:  stroke weight
+    DLC_TRI     = 7,  // 6×i16: x1,y1,x2,y2,x3,y3 (post-transform)
+    DLC_LINE    = 8,  // 4×i16: x1,y1,x2,y2        (post-transform)
+};
+
+static inline void _dl_u8(uint8_t v) {
+    if (_dl_len + 1 < DL_BUF_SIZE) _dl_buf[_dl_len++] = v;
+}
+static inline void _dl_u16(uint16_t v) {
+    if (_dl_len + 2 < DL_BUF_SIZE) {
+        _dl_buf[_dl_len++] = (uint8_t)(v & 0xFF);
+        _dl_buf[_dl_len++] = (uint8_t)(v >> 8);
+    }
+}
+static inline void _dl_i16(int v) { _dl_u16((uint16_t)(int16_t)v); }
+
 static uint16_t _rgb565(int r, int g, int b) {
     if (r < 0) r = 0; if (r > 255) r = 255;
     if (g < 0) g = 0; if (g > 255) g = 255;
@@ -116,31 +150,43 @@ extern "C" {
 void p5_background(int r, int g, int b) {
     _st.bg_rgb565 = _rgb565(r, g, b);
     _cv->fillScreen(_st.bg_rgb565);
+    if (_dl_recording) { _dl_u8(DLC_BG); _dl_u16(_st.bg_rgb565); }
 }
 
 void p5_fill(int r, int g, int b) {
     _st.fill_rgb565 = _rgb565(r, g, b);
     _st.no_fill = false;
+    if (_dl_recording) { _dl_u8(DLC_FILL); _dl_u16(_st.fill_rgb565); }
 }
 void p5_fillA(int r, int g, int b, int a) {
     _st.fill_rgb565 = _alpha_blend(_rgb565(r, g, b), _st.bg_rgb565, a);
     _st.no_fill = false;
+    if (_dl_recording) { _dl_u8(DLC_FILL); _dl_u16(_st.fill_rgb565); }
 }
-void p5_no_fill(void) { _st.no_fill = true; }
+void p5_no_fill(void) {
+    _st.no_fill = true;
+    if (_dl_recording) _dl_u8(DLC_NO_FILL);
+}
 
 void p5_stroke(int r, int g, int b) {
     _st.stroke_rgb565 = _rgb565(r, g, b);
     _st.no_stroke = false;
+    if (_dl_recording) { _dl_u8(DLC_STROKE); _dl_u16(_st.stroke_rgb565); }
 }
 void p5_strokeA(int r, int g, int b, int a) {
     _st.stroke_rgb565 = _alpha_blend(_rgb565(r, g, b), _st.bg_rgb565, a);
     _st.no_stroke = false;
+    if (_dl_recording) { _dl_u8(DLC_STROKE); _dl_u16(_st.stroke_rgb565); }
 }
-void p5_no_stroke(void) { _st.no_stroke = true; }
+void p5_no_stroke(void) {
+    _st.no_stroke = true;
+    if (_dl_recording) _dl_u8(DLC_NO_STR);
+}
 
 void p5_stroke_weight(int w) {
     if (w < 1) w = 1; if (w > 8) w = 8;
     _st.weight = (uint8_t)w;
+    if (_dl_recording) { _dl_u8(DLC_SW); _dl_u8(_st.weight); }
 }
 
 // NOTE: all drawing primitives take `int` coords because mJS's FFI dispatch
@@ -251,6 +297,7 @@ void p5_line(int x1, int y1, int x2, int y2) {
     apply(_st.xform, (float)x1, (float)y1, a, b);
     apply(_st.xform, (float)x2, (float)y2, c, d);
     _stroke_line(a, b, c, d);
+    if (_dl_recording) { _dl_u8(DLC_LINE); _dl_i16(a); _dl_i16(b); _dl_i16(c); _dl_i16(d); }
 }
 
 void p5_point(int x, int y) {
@@ -270,6 +317,10 @@ void p5_triangle(int x1, int y1, int x2, int y2, int x3, int y3) {
         _stroke_line(a, b, c, d);
         _stroke_line(c, d, e, f);
         _stroke_line(e, f, a, b);
+    }
+    if (_dl_recording) {
+        _dl_u8(DLC_TRI);
+        _dl_i16(a); _dl_i16(b); _dl_i16(c); _dl_i16(d); _dl_i16(e); _dl_i16(f);
     }
 }
 
@@ -378,6 +429,76 @@ const char* p5_str(double n) {
     return buf;
 }
 
+// ── Display-list control ─────────────────────────────────────────────────────
+void dl_record(void) { _dl_len = 0; _dl_recording = true; }
+void dl_end(void)    { _dl_recording = false; }
+
+// Stroke-line helper for dl_play() — mirrors _stroke_line() but takes explicit
+// color and weight so it doesn't depend on _st (which is reset between frames).
+static void _dl_stroke_line_c(int x1, int y1, int x2, int y2,
+                               uint16_t color, uint8_t weight) {
+    if (weight <= 1) { _cv->drawLine(x1, y1, x2, y2, color); return; }
+    float dx = (float)(x2 - x1), dy = (float)(y2 - y1);
+    float len = sqrtf(dx * dx + dy * dy);
+    if (len < 0.5f) { _cv->fillCircle(x1, y1, weight / 2, color); return; }
+    float nx = -dy / len, ny = dx / len;
+    int half = weight / 2;
+    for (int i = -half; i <= half; i++) {
+        _cv->drawLine(x1 + (int)(nx * i), y1 + (int)(ny * i),
+                      x2 + (int)(nx * i), y2 + (int)(ny * i), color);
+    }
+}
+
+void dl_play(void) {
+    if (_dl_len == 0) return;
+    uint16_t cur_fill = 0, cur_stroke = 0;
+    bool no_fill = false, no_stroke = true;
+    uint8_t sw = 1;
+    int i = 0;
+
+    // Lambda readers advance i and return the decoded value. Lambdas capture i
+    // by reference so each call updates position correctly.
+    auto rd_u16 = [&]() -> uint16_t {
+        uint16_t v = (uint16_t)(_dl_buf[i] | ((uint16_t)_dl_buf[i + 1] << 8));
+        i += 2; return v;
+    };
+    auto rd_i16 = [&]() -> int {
+        int v = (int)(int16_t)((uint16_t)_dl_buf[i] | ((uint16_t)_dl_buf[i + 1] << 8));
+        i += 2; return v;
+    };
+
+    while (i < _dl_len) {
+        uint8_t cmd = _dl_buf[i++];
+        switch (cmd) {
+        case DLC_BG:      { _cv->fillScreen(rd_u16());                              break; }
+        case DLC_FILL:    { cur_fill   = rd_u16(); no_fill   = false;               break; }
+        case DLC_NO_FILL: { no_fill    = true;                                      break; }
+        case DLC_STROKE:  { cur_stroke = rd_u16(); no_stroke = false;               break; }
+        case DLC_NO_STR:  { no_stroke  = true;                                      break; }
+        case DLC_SW:      { sw = _dl_buf[i++];                                      break; }
+        case DLC_TRI: {
+            int x1 = rd_i16(); int y1 = rd_i16();
+            int x2 = rd_i16(); int y2 = rd_i16();
+            int x3 = rd_i16(); int y3 = rd_i16();
+            if (!no_fill)   _cv->fillTriangle(x1, y1, x2, y2, x3, y3, cur_fill);
+            if (!no_stroke) {
+                _dl_stroke_line_c(x1, y1, x2, y2, cur_stroke, sw);
+                _dl_stroke_line_c(x2, y2, x3, y3, cur_stroke, sw);
+                _dl_stroke_line_c(x3, y3, x1, y1, cur_stroke, sw);
+            }
+            break;
+        }
+        case DLC_LINE: {
+            int x1 = rd_i16(); int y1 = rd_i16();
+            int x2 = rd_i16(); int y2 = rd_i16();
+            if (!no_stroke) _dl_stroke_line_c(x1, y1, x2, y2, cur_stroke, sw);
+            break;
+        }
+        default: i = _dl_len; break;  // unknown cmd — bail safely
+        }
+    }
+}
+
 } // extern "C"
 
 // =============================================================================
@@ -416,6 +537,9 @@ static const char* PRELUDE_JS =
 "let str=ffi('char* p5_str(double)');"
 "let noAutoRotate=ffi('void p5_no_auto_rotate()');"
 "let autoRotate=ffi('void p5_auto_rotate()');"
+"let _dlR=ffi('void dl_record()');"
+"let _dlE=ffi('void dl_end()');"
+"let _dlP=ffi('void dl_play()');"
 
 // p5-named globals. mJS is strict about braced if/else, so every conditional
 // uses explicit blocks.
@@ -452,6 +576,9 @@ static const char* PRELUDE_JS =
 "function degrees(r){ return r * 180 / PI; }\n"
 "function millis(){ return _ms(); }\n"
 "function centerOrigin(){ translate(width/2, height/2); }\n"
+"function dlRecord(){ _dlR(); }\n"
+"function dlEnd(){ _dlE(); }\n"
+"function dlPlay(){ _dlP(); }\n"
 // p5 math globals — bound directly to libc's sin/cos/... via the FFI resolver.
 "let sin = ffi('double sin(double)');\n"
 "let cos = ffi('double cos(double)');\n"
@@ -518,6 +645,9 @@ static const FnEntry FN_TABLE[] = {
     { "p5_str",           (void*)p5_str },
     { "p5_no_auto_rotate",(void*)p5_no_auto_rotate },
     { "p5_auto_rotate",   (void*)p5_auto_rotate },
+    { "dl_record",        (void*)dl_record },
+    { "dl_end",           (void*)dl_end },
+    { "dl_play",          (void*)dl_play },
     // libc math, bound directly — p5 exposes these as bare globals.
     { "sin",   (void*)(double(*)(double))sin },
     { "cos",   (void*)(double(*)(double))cos },
