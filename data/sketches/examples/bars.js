@@ -1,7 +1,7 @@
 // bars.js — two counter-rotating stripe layers create Moiré as you tilt.
 // Layer 1 spins 2x clockwise with device rotation.
 // Layer 2 spins 2x counter-clockwise. Their interference shifts with tilt.
-// Tilt angle is EMA-smoothed (~5 s to settle) for a slow, fluid rotation.
+// Tilt angle is EMA-smoothed (~10 s to settle) for a slow, fluid rotation.
 
 let _cx = 0;
 let _cy = 0;
@@ -14,8 +14,8 @@ function setup() {
 function draw() {
   background(0);
 
-  _cx = _cx * 0.96 + accelX * 0.04;
-  _cy = _cy * 0.96 + accelY * 0.04;
+  _cx = _cx * 0.98 + accelX * 0.02;
+  _cy = _cy * 0.98 + accelY * 0.02;
   _tilt = atan2(_cy, _cx);
 
   stroke(255);
