@@ -1,32 +1,28 @@
 // flock.js — murmuration. Tilt steers the whole flock.
-// 12 birds each own a slot in a rotating ring that chases a Lissajous ghost.
-// The ring spins slowly (~13s/rev), so birds arc around the ghost while it
-// traces a figure-8 path. No per-bird trig — cos/sin computed once per frame.
+// Ghost cohesion (k=0.010) pulls birds together toward a Lissajous target.
+// Centroid repulsion (k=0.006) pushes them away from the flock's own center.
+// The two forces balance into a loose, self-maintaining cloud — no rigid slots.
 
-let N = 12;
-let xs  = [0,0,0,0,0,0,0,0,0,0,0,0];
-let ys  = [0,0,0,0,0,0,0,0,0,0,0,0];
-let vxs = [0,0,0,0,0,0,0,0,0,0,0,0];
-let vys = [0,0,0,0,0,0,0,0,0,0,0,0];
-
-// Ring of radius 35, 12 birds at 30° intervals
-// DX[i] = round(35*cos(i*30°)), DY[i] = round(35*sin(i*30°))
-let DX = [35, 30, 18,  0, -18, -30, -35, -30, -18,   0,  18,  30];
-let DY = [ 0, 18, 30, 35,  30,  18,   0, -18, -30, -35, -30, -18];
+let N = 14;
+let xs  = [0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+let ys  = [0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+let vxs = [0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+let vys = [0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 
 let _gxB  = 120;
 let _gyB  = 120;
 let _gTick = 0;
-let _ra   = 0;
+let _cmx  = 120;
+let _cmy  = 120;
 
 function setup() {
   noAutoRotate();
   let i;
   for (i = 0; i < N; i = i + 1) {
-    xs[i]  = 120 + DX[i];
-    ys[i]  = 120 + DY[i];
-    vxs[i] = random(-0.5, 0.5);
-    vys[i] = random(-0.5, 0.5);
+    xs[i]  = 70 + random(100);
+    ys[i]  = 70 + random(100);
+    vxs[i] = random(-1, 1);
+    vys[i] = random(-1, 1);
   }
 }
 
@@ -45,10 +41,6 @@ function draw() {
   let gx = _gxB + aY * 30;
   let gy = _gyB + aX * 30;
 
-  _ra = _ra + 0.03;
-  let cr = cos(_ra);
-  let sr = sin(_ra);
-
   _sk(themeR, themeG, themeB);
   _sw(2);
 
@@ -59,21 +51,19 @@ function draw() {
   let yi;
   let vxi;
   let vyi;
-  let txi;
-  let tyi;
+  let sumX = 0;
+  let sumY = 0;
   for (i = 0; i < N; i = i + 1) {
     xi  = xs[i];
     yi  = ys[i];
     vxi = vxs[i];
     vyi = vys[i];
 
-    txi = gx + DX[i] * cr - DY[i] * sr;
-    tyi = gy + DX[i] * sr + DY[i] * cr;
-    ax  = (txi - xi) * 0.008 + aY * 0.08;
-    ay  = (tyi - yi) * 0.008 + aX * 0.08;
+    ax = (gx - xi) * 0.010 + (xi - _cmx) * 0.006 + aY * 0.08;
+    ay = (gy - yi) * 0.010 + (yi - _cmy) * 0.006 + aX * 0.08;
 
-    vxi = (vxi + ax) * 0.88;
-    vyi = (vyi + ay) * 0.88;
+    vxi = (vxi + ax) * 0.92;
+    vyi = (vyi + ay) * 0.92;
 
     xi = xi + vxi;
     yi = yi + vyi;
@@ -88,6 +78,11 @@ function draw() {
     vxs[i] = vxi;
     vys[i] = vyi;
 
+    sumX = sumX + xi;
+    sumY = sumY + yi;
+
     _ln(xi, yi, xi + vxi * 3, yi + vyi * 3);
   }
+  _cmx = sumX * 0.0715;
+  _cmy = sumY * 0.0715;
 }
