@@ -25,11 +25,9 @@ let FB =[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 let FC =[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 let FD =[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 
-let _dlBucket = -1;
-let _dlReady  = 0;
+let _dlReady = 0;
 let _lx = 0;
 let _ly = 0;
-let _lz = 1;
 
 function setup() {
   noAutoRotate();
@@ -84,30 +82,17 @@ function setup() {
 }
 
 function draw() {
-  // Light direction from accelerometer. accelY tilts left/right → light left/right.
-  let rlx = accelY;
-  let rly = accelX;
-  let rlz = 0.7;
-  let lm  = sqrt(rlx*rlx + rly*rly + rlz*rlz);
-  if (lm < 0.001) { lm = 0.001; }
-  _lx = rlx / lm;
-  _ly = rly / lm;
-  _lz = rlz / lm;
-
-  // Bucket by light direction (10x10 grid)
-  let bx = (_lx * 4 + 5) | 0;  if (bx < 0) { bx = 0; }  if (bx > 9) { bx = 9; }
-  let by = (_ly * 4 + 5) | 0;  if (by < 0) { by = 0; }  if (by > 9) { by = 9; }
-  let bucket = bx + by * 10;
-
-  if (bucket !== _dlBucket || !_dlReady) {
-    _dlBucket = bucket;
+  // Record the sphere once with a fixed warm-light direction (top-right).
+  // Re-recording every tilt costs ~600ms; instead the specular moves live.
+  if (!_dlReady) {
+    let flx = 0.45; let fly = 0.45; let flz = 0.77;
     dlRecord();
     _bg(2, 4, 12);
     _ns();
     let f;
     for (f = 0; f < NF; f = f + 1) {
       if (FNZ[f] > 0) {
-        let dot = FNX[f]*_lx + FNY[f]*_ly + FNZ[f]*_lz;
+        let dot = FNX[f]*flx + FNY[f]*fly + FNZ[f]*flz;
         if (dot < 0) { dot = 0; }
         let br = 0.07 + dot * dot * 0.93;
         let cr = (themeR * br) | 0;
@@ -128,9 +113,16 @@ function draw() {
 
   dlPlay();
 
-  // Live: specular starburst at the lit point — lines only, no fill
-  let sx = (CX + _lx * SR * 0.45) | 0;
-  let sy = (CY - _ly * SR * 0.45) | 0;
+  // Live light direction from tilt — drives the specular only
+  _lx = accelY;
+  _ly = accelX;
+
+  // Live: specular starburst tracks tilt every frame
+  let lm = sqrt(_lx*_lx + _ly*_ly + 0.49);
+  let nlx = _lx / lm;
+  let nly = _ly / lm;
+  let sx = (CX + nlx * SR * 0.45) | 0;
+  let sy = (CY - nly * SR * 0.45) | 0;
   _sw(3);
   _ska(255, 255, 255, 240);
   _ln(sx - 9, sy, sx + 9, sy);
