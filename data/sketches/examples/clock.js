@@ -1,13 +1,10 @@
-// clock.js — analog clock showing time since boot
+// clock.js — analog clock showing local wall time.
 //
-// Demonstrates nested rotate/push/pop transforms. The hour, minute, and
-// second hands all start at the same origin and rotate by different
-// amounts each frame. Push/pop isolate each hand's rotation so they
-// don't compound.
-//
-// Note: this is uptime, not wall-clock time — millis() is "ms since the
-// device booted", which resets to 0 on power-up. So at first plug-in the
-// clock starts at 12.
+// CLOCK_OFFSET_S is injected at upload time (seconds since midnight,
+// local time). millis() tracks elapsed time from boot; adding the offset
+// gives the correct wall time. Re-push after a device reboot to re-sync.
+
+let CLOCK_OFFSET_S = 0;
 
 function setup() {
   // A clock face is one of those rare cases where you DO want the canvas
@@ -19,7 +16,7 @@ function draw() {
   background(12, 8, 20);
 
   // Seconds elapsed since boot, as a float.
-  let secs = millis() / 1000;
+  let secs = millis() / 1000 + CLOCK_OFFSET_S;
 
   // Move origin to the canvas center; every later coord is relative to it.
   push();

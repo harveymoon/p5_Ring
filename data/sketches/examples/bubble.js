@@ -1,55 +1,62 @@
-// shapes.js — pure-drawing demo
-//
-// Shows off all the primitives + nested transforms (push/pop, rotate).
-// No sensor input, no autoRotate — the artwork stays put no matter how
-// you hold the device. A good template if you want to design a fixed
-// composition that doesn't react to tilt.
-
+// bubble.js — bubbles floating toward real-world north.
+// Tilt the device to change which way the bubbles rise.
 
 let xs = [];
 let ys = [];
 let rs = [];
 let speeds = [];
 let wiggles = [];
+let N = 20;
+
+let cachedAX = 0;
+let cachedAY = 0;
+let cu = 1;
+let su = 0;
+let a0 = 0;
+let tiltTick = 0;
 
 function setup() {
-    autoRotate();
-    
-    for (let i = 0; i < 20; i++) {
-    xs[i] = random(width);
-    ys[i] = random(height);
+  for (let i = 0; i < N; i = i + 1) {
+    xs[i] = random(240);
+    ys[i] = random(240);
     rs[i] = random(6, 30);
     speeds[i] = random(0.3, 1.2);
     wiggles[i] = random(1000);
   }
-
 }
 
 function draw() {
   background(0);
   noFill();
+  stroke(255);
 
-  for (let i = 0; i < xs.length; i++) {
-    ys[i] = ys[i] - speeds[i];
-    xs[i] = xs[i] + sin(frameCount * 0.05 + wiggles[i]) * 0.4;
+  tiltTick++;
+  if (tiltTick >= 3) {
+    tiltTick = 0;
+    cachedAX = accelX;
+    cachedAY = accelY;
+    let upAngle = atan2(-cachedAX, cachedAY);
+    cu = cos(upAngle);
+    su = sin(upAngle);
+    a0 = PI + upAngle + HALF_PI;
+  }
 
-    if (ys[i] < -rs[i]) {
-      ys[i] = height + rs[i];
-      xs[i] = random(width);
+  for (let i = 0; i < N; i = i + 1) {
+    xs[i] = xs[i] + cachedAY * speeds[i] + sin(frameCount * 0.05 + wiggles[i]) * 0.4;
+    ys[i] = ys[i] - cachedAX * speeds[i];
+
+    if (xs[i] < 0 - rs[i] || xs[i] > 240 + rs[i] || ys[i] < 0 - rs[i] || ys[i] > 240 + rs[i]) {
+      let spread = random(-100, 100);
+      xs[i] = 120 + (-cachedAY) * 140 + cachedAX * spread;
+      ys[i] = 120 + cachedAX * 140 + cachedAY * spread;
     }
 
-    stroke(255);
     strokeWeight(1.5);
     circle(xs[i], ys[i], rs[i] * 2);
 
     strokeWeight(1);
-    arc(
-      xs[i] - rs[i] * 0.25,
-      ys[i] - rs[i] * 0.25,
-      rs[i] * 0.6,
-      rs[i] * 0.6,
-      PI,
-      PI + HALF_PI
-    );
+    let arcX = xs[i] + (cu + su) * rs[i] * 0.25;
+    let arcY = ys[i] + (su - cu) * rs[i] * 0.25;
+    arc(arcX, arcY, rs[i] * 0.6, rs[i] * 0.6, a0, a0 + HALF_PI);
   }
 }
