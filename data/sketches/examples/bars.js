@@ -23,7 +23,7 @@ function draw() {
 
   push();
   translate(120, 120);
-  rotate(_tilt * 2);
+  rotate(_tilt * 10);
   for (let x = -170; x <= 170; x = x + 20) {
     line(x, -170, x, 170);
   }
@@ -31,7 +31,7 @@ function draw() {
 
   push();
   translate(120, 120);
-  rotate(_tilt * -2);
+  rotate(_tilt * -10);
   for (let x = -170; x <= 170; x = x + 20) {
     line(x, -170, x, 170);
   }

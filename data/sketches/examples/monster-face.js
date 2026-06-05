@@ -18,21 +18,21 @@ function draw() {
   
   noStroke();
 
-//  let r = noise(frameCount * 0.05) * 255;
-//  let g = noise(frameCount * 0.05 + 100) * 255;
-//  let b = noise(frameCount * 0.05 + 200) * 255;
-//
-//  if (r > g && r > b) {
-//    r = 255;
-//  } else if (g > r && g > b) {
-//    g = 255;
-//  } else {
-//    b = 255;
-//  }
+  let r = noise(frameCount * 0.05) * 255;
+  let g = noise(frameCount * 0.05 + 100) * 255;
+  let b = noise(frameCount * 0.05 + 200) * 255;
+
+  if (r > g && r > b) {
+    r = 255;
+  } else if (g > r && g > b) {
+    g = 255;
+  } else {
+    b = 255;
+  }
 
 
-//  fill(r, g, b);
-   fill(0, 255, 0); 
+  fill(r, g, b);
+//   fill(0, 255, 0); 
 
   for (let i = 0; i < 10; i = i + 1) {
     let x = noise(frameCount * 0.05 + i) * 240;
