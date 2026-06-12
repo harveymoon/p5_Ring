@@ -1,10 +1,10 @@
 {
-  "name": "qring-watch",
+  "name": "p5ring-watch",
   "version": "0.1.0",
-  "description": "Watch a folder and push sketch changes to a Q-Ring over USB Serial.",
+  "description": "Watch a folder and push sketch changes to a p5-ring over USB Serial.",
   "main": "index.js",
   "bin": {
-    "qring-watch": "index.js"
+    "p5ring-watch": "index.js"
   },
   "scripts": {
     "start": "node index.js"

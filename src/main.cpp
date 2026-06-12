@@ -1,14 +1,14 @@
 // =============================================================================
-// Q-Ring — p5.js sketch runner on Waveshare RP2040-LCD-1.28
+// p5-ring — p5.js sketch runner on Waveshare RP2040-LCD-1.28
 //
-// PlatformIO env: [env:q_ring]  (see platformio.ini)
+// PlatformIO env: [env:p5_ring]  (see platformio.ini)
 //
 // USB: composite CDC + MSC. The drive appears on the host as a FAT volume
-// labeled "Q-RING" with a `sketches/` folder. Drop a .js file in, eject, the
+// labeled "P5-RING" with a `sketches/` folder. Drop a .js file in, eject, the
 // device reloads. CDC Serial (115200) stays alive alongside.
 //
 // Standalone reload  : host drag-and-drop + eject
-// Dev-mode reload    : `tools/qring-watch/` Node companion pushes over Serial
+// Dev-mode reload    : `tools/p5ring-watch/` Node companion pushes over Serial
 //                       with the protocol  "UPLOAD <path> <len>\n<bytes>\nEND\n"
 //
 // Serial commands (one per line):
@@ -49,7 +49,7 @@ static char     _upload_buf[SKETCH_SRC_MAX];
 static uint32_t _upload_written  = 0;
 
 static void _on_sketch_reload(const char* path) {
-    Serial.printf("[Q-RING] Reload trigger: %s\n", path);
+    Serial.printf("[P5-RING] Reload trigger: %s\n", path);
     if (sketch_vm_load(path) == 0) {
         face_show_alert("Sketch reloaded |2000");
     } else {
@@ -233,8 +233,8 @@ static void _serial_tick() {
 // SAFE-MODE: skip FatFS/FatFSUSB/mJS to isolate the boot-hang. Define this in
 // platformio.ini build_flags to bypass the FS path. Once we confirm the face
 // runs in safe mode, we re-enable FS one piece at a time.
-#ifndef QRING_SAFE_MODE
-#define QRING_SAFE_MODE 0
+#ifndef P5RING_SAFE_MODE
+#define P5RING_SAFE_MODE 0
 #endif
 
 void setup() {
@@ -251,46 +251,46 @@ void setup() {
     Serial.begin(115200);
     delay(3000);
 
-    Serial.println("\n[Q-RING] Booting...");
+    Serial.println("\n[P5-RING] Booting...");
     Serial.flush();
 
-#if !QRING_SAFE_MODE
-    Serial.println("[Q-RING] step A: sketch_loader_init()"); Serial.flush();
+#if !P5RING_SAFE_MODE
+    Serial.println("[P5-RING] step A: sketch_loader_init()"); Serial.flush();
     int rc = sketch_loader_init();
-    Serial.printf("[Q-RING]   -> rc=%d\n", rc); Serial.flush();
+    Serial.printf("[P5-RING]   -> rc=%d\n", rc); Serial.flush();
     sketch_loader_on_reload(_on_sketch_reload);
 #else
-    Serial.println("[Q-RING] SAFE MODE: skipping FS + USB MSC"); Serial.flush();
+    Serial.println("[P5-RING] SAFE MODE: skipping FS + USB MSC"); Serial.flush();
 #endif
 
-    Serial.println("[Q-RING] step B: lcd.init()"); Serial.flush();
+    Serial.println("[P5-RING] step B: lcd.init()"); Serial.flush();
     lcd.init();
     lcd.setRotation(0);
     lcd.fillScreen(0x0000);
-    Serial.println("[Q-RING]   -> ok"); Serial.flush();
+    Serial.println("[P5-RING]   -> ok"); Serial.flush();
 
-    Serial.println("[Q-RING] step C: face_init() + load settings"); Serial.flush();
+    Serial.println("[P5-RING] step C: face_init() + load settings"); Serial.flush();
     face_init(&lcd);
     settings_load(&settings);    // brightness + face state from /sketches/.settings
     settings_apply(&settings);   // applies both immediately
-    Serial.println("[Q-RING]   -> ok"); Serial.flush();
+    Serial.println("[P5-RING]   -> ok"); Serial.flush();
 
-    Serial.println("[Q-RING] step D: imu_init()"); Serial.flush();
+    Serial.println("[P5-RING] step D: imu_init()"); Serial.flush();
     imu_init();
-    Serial.println("[Q-RING]   -> ok"); Serial.flush();
+    Serial.println("[P5-RING]   -> ok"); Serial.flush();
 
-#if !QRING_SAFE_MODE
-    Serial.println("[Q-RING] step E: sketch_vm_init()"); Serial.flush();
+#if !P5RING_SAFE_MODE
+    Serial.println("[P5-RING] step E: sketch_vm_init()"); Serial.flush();
     sketch_vm_init();
-    Serial.println("[Q-RING] step F: sketch_vm_load()"); Serial.flush();
+    Serial.println("[P5-RING] step F: sketch_vm_load()"); Serial.flush();
     if (sketch_vm_load(SKETCH_PATH) == 0) {
-        Serial.printf("[Q-RING] Sketch loaded: %s\n", SKETCH_PATH);
+        Serial.printf("[P5-RING] Sketch loaded: %s\n", SKETCH_PATH);
     } else {
-        Serial.println("[Q-RING] No valid sketch — fallback face active");
+        Serial.println("[P5-RING] No valid sketch — fallback face active");
     }
 #endif
 
-    Serial.println("[Q-RING] Ready.");
+    Serial.println("[P5-RING] Ready.");
     Serial.flush();
 }
 

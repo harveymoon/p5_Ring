@@ -1,6 +1,6 @@
 #pragma once
 /*
- * Q-Ring custom platform shim for mJS — RP2040 + arduino-pico (newlib).
+ * p5-ring custom platform shim for mJS — RP2040 + arduino-pico (newlib).
  * Picked CS_P_CUSTOM (set via build_flag -DCS_PLATFORM=CS_P_CUSTOM) instead of
  * CS_P_STM32 because the stock STM32 path #includes <stm32_sdk_hal.h>.
  * Everything else (newlib headers, malloc, FILE*) is available.

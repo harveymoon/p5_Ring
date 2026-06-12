@@ -1,16 +1,16 @@
-Q-Ring — a tiny p5.js sketch runner you can hold in your hand.
+p5-ring — a tiny p5.js sketch runner you can hold in your hand.
 
 EDITING:
   1. Open  sketches/current.js  in any editor.
   2. Save.
-  3. Drag the Q-RING drive icon to the trash (or hit Cmd+E) to eject.
+  3. Drag the P5-RING drive icon to the trash (or hit Cmd+E) to eject.
      macOS only flushes writes on eject; the device reloads as soon as that
      finishes — within a second you'll see your changes on screen.
 
 DEV MODE (instant reload, no eject):
-  Plug Q-Ring into a USB port, then on your Mac:
-     cd tools/qring-watch && npm install && node index.js ~/my-sketches/
-  Edit any file in ~/my-sketches/, save, and Q-Ring updates within ~500 ms.
+  Plug p5-ring into a USB port, then on your Mac:
+     cd tools/p5ring-watch && npm install && node index.js ~/my-sketches/
+  Edit any file in ~/my-sketches/, save, and p5-ring updates within ~500 ms.
 
 EXAMPLES live in   sketches/examples/   — copy one over current.js to try it.
 

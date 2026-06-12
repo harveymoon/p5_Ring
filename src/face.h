@@ -2,9 +2,9 @@
 #include <LovyanGFX.hpp>
 
 // =============================================================================
-// Q-Ring — Fallback animated face.
+// p5-ring — Fallback animated face.
 //
-// Q-Ring fallback face engine. When a p5 sketch is
+// p5-ring fallback face engine. When a p5 sketch is
 // loaded and running cleanly the face is bypassed; on boot-without-sketch, on
 // sketch error, or on watchdog overrun the face becomes the standby render.
 // Default state is HAPPY (see STANDBY_FACE_STATE in config.h).

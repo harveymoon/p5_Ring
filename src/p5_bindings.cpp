@@ -1,5 +1,5 @@
 // =============================================================================
-// Q-Ring — p5.js drawing surface, bound to LovyanGFX via mJS FFI.
+// p5-ring — p5.js drawing surface, bound to LovyanGFX via mJS FFI.
 //
 // Architecture:
 //   - C helper functions with simple int/double signatures (one per primitive)
@@ -666,7 +666,7 @@ static const FnEntry FN_TABLE[] = {
     { "round", (void*)(double(*)(double))round },
 };
 
-extern "C" void* qring_ffi_resolver(void* handle, const char* name) {
+extern "C" void* p5ring_ffi_resolver(void* handle, const char* name) {
     (void)handle;
     for (size_t i = 0; i < sizeof(FN_TABLE) / sizeof(FN_TABLE[0]); i++) {
         if (strcmp(FN_TABLE[i].name, name) == 0) return FN_TABLE[i].fn;
@@ -690,7 +690,7 @@ void p5_bindings_install(struct mjs* m) {
 
     // Register the resolver — mJS will call this for every ffi('...') in the
     // prelude. No dlsym needed; our small static table handles every p5 name.
-    mjs_set_ffi_resolver(m, (mjs_ffi_resolver_t*)qring_ffi_resolver);
+    mjs_set_ffi_resolver(m, (mjs_ffi_resolver_t*)p5ring_ffi_resolver);
 }
 
 const char* p5_bindings_prelude_js(void) { return PRELUDE_JS; }

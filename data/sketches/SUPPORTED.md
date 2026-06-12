@@ -1,4 +1,4 @@
-# Q-Ring Sketch Reference
+# p5-ring Sketch Reference
 
 A small p5-flavored playground that lives on a 240×240 round LCD.
 
@@ -31,7 +31,7 @@ Helper: `centerOrigin()` translates to (width/2, height/2)
 
 The on-device engine is **mJS**. Everything is synchronous. Compared to p5 web:
 
-- Use `let` (not `var`). Q-Ring auto-rewrites `var ` → `let ` on load, but
+- Use `let` (not `var`). p5-ring auto-rewrites `var ` → `let ` on load, but
   declarations like `const` are not supported.
 - No arrow functions: write `function (x) { return x*2 }` not `x => x*2`.
 - No classes — use object literals + functions.

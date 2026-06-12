@@ -1,6 +1,6 @@
 // tilt.js — auto-rotate demo
 //
-// By default Q-Ring sketches stay put when you tilt the device — handy
+// By default p5-ring sketches stay put when you tilt the device — handy
 // for fixed compositions. Calling autoRotate() in setup() opts in to
 // gravity-aware behavior: the canvas turns so "up" on the artwork always
 // matches real-world up.

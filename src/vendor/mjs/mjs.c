@@ -9908,7 +9908,7 @@ MJS_PRIVATE mjs_err_t mjs_ffi_call2(struct mjs *mjs) {
       case MJS_FFI_CTYPE_INT: {
         int intval = 0;
         if (mjs_is_number(arg)) {
-          /* Q-Ring patch: mjs_get_int does (int)(unsigned int)(double) which
+          /* p5-ring patch: mjs_get_int does (int)(unsigned int)(double) which
            * zeros every negative number due to UB in the unsigned cast. Use
            * mjs_get_int32, which does a single direct (int32_t)(double) cast
            * and preserves the sign. Without this, every negative coordinate

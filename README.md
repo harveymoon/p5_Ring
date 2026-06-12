@@ -1,4 +1,4 @@
-# 🌐 Q-Ring
+# 🌐 p5-ring
 
 A pocket-sized creative coding canvas — a **240×240 round LCD** that runs your
 own p5-flavored JavaScript sketches, live-reloads from your browser, and falls
@@ -13,15 +13,15 @@ display + QMI8658 IMU). USB-powered, no batteries, no cloud.
 
 ## 🚀 Companion app
 
-Plug your Q-Ring into a **Chrome or Edge** browser and open:
+Plug your p5-ring into a **Chrome or Edge** browser and open:
 
-### **<https://harveymoon.github.io/Q_Ring/>**
+### **<https://harveymoon.github.io/p5_Ring/>**
 
-<a href="https://harveymoon.github.io/Q_Ring/">
+<a href="https://harveymoon.github.io/p5_Ring/">
   <img src="docs/qr.png" alt="QR code for the companion URL" width="180">
 </a>
 
-Click *Connect Q-Ring…*, grant USB permission once, and the page will silently
+Click *Connect p5-ring…*, grant USB permission once, and the page will silently
 auto-reconnect on every future visit. From there you can:
 
 - 🎨 Pick **example sketches** from the dropdown and push them to the device.
@@ -35,7 +35,7 @@ auto-reconnect on every future visit. From there you can:
 The page is a single self-contained `docs/index.html` served via GitHub Pages —
 no clone, no install, no CLI required.
 
-> 💡 Use Chrome's address-bar menu → *Install Q-Ring companion…* to pin the
+> 💡 Use Chrome's address-bar menu → *Install p5-ring companion…* to pin the
 > page to your dock/start menu as a standalone app.
 
 ---
@@ -69,7 +69,7 @@ scrollable cheat sheet inside the companion's *Help* tab too.
 
 The fastest loop:
 
-1. Open the [companion](https://harveymoon.github.io/Q_Ring/) → *Pick sketch
+1. Open the [companion](https://harveymoon.github.io/p5_Ring/) → *Pick sketch
    file…* → choose any `.js` on disk.
 2. Save the file in your editor.
 3. The page detects the save (~500 ms) and pushes the new bytes over USB. The
@@ -80,7 +80,7 @@ the same thing from a terminal — handy for batch examples or pairing with
 build tools:
 
 ```
-cd tools/qring-watch
+cd tools/p5ring-watch
 npm install
 node index.js ~/my-sketches/
 ```
@@ -152,7 +152,7 @@ If `picotool` can't grab the device on Windows, copy the UF2 manually:
 
 1. Hold the **BOOTSEL** button while plugging in USB → the Pico mounts as
    `RPI-RP2`.
-2. Copy `.pio/build/q_ring/firmware.uf2` onto that drive. The device reboots
+2. Copy `.pio/build/p5_ring/firmware.uf2` onto that drive. The device reboots
    into the new firmware.
 
 ---
@@ -176,7 +176,7 @@ data/sketches/             files flashed into LittleFS
   SUPPORTED.md               p5 surface + dialect notes
 
 docs/                      GitHub Pages: companion app, PWA manifest, icon, QR
-tools/qring-watch/         optional Node CLI: watch a folder, push to device
+tools/p5ring-watch/         optional Node CLI: watch a folder, push to device
 ```
 
 ---

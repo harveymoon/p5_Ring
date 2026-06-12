@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 // =============================================================================
-// Q-Ring sketch loader — FatFS + FatFSUSB + Serial UPLOAD protocol.
+// p5-ring sketch loader — FatFS + FatFSUSB + Serial UPLOAD protocol.
 //
 // Lifecycle:
 //   sketch_loader_init()   — MUST be the first call in setup(). Mounts FatFS,

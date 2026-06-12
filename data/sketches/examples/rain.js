@@ -44,7 +44,7 @@ function draw() {
 //    line(d.x, d.y, d.x, d.y + d.len);
       fill(255);
       textSize(20);
-      text('Q',d.x, d.y);
+      text('p',d.x, d.y);
 
     // Wrap around the bottom so the field never empties out.
     if (d.y > 240) { d.y = -10; d.x = random(0, 240); }

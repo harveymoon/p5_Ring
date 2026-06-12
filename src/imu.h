@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 // =============================================================================
-// Q-Ring — QMI8658 accelerometer → auto-rotation + accel exposed to p5
+// p5-ring — QMI8658 accelerometer → auto-rotation + accel exposed to p5
 // =============================================================================
 
 void    imu_init();

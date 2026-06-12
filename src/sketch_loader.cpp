@@ -6,7 +6,7 @@
 #include <string.h>
 
 // =============================================================================
-// Q-Ring sketch loader (LittleFS).
+// p5-ring sketch loader (LittleFS).
 //
 // Storage: LittleFS on the 1 MB filesystem partition. Host writes happen over
 // USB Serial via the UPLOAD <path> <len>\n<bytes>\nEND\n protocol parsed in
@@ -41,7 +41,7 @@ static uint32_t _crc32(const uint8_t* data, size_t n, uint32_t crc = 0) {
 // Default content baked into firmware. Self-healing on first boot or wipe.
 // =============================================================================
 static const char DEFAULT_CURRENT_JS[] =
-"// Q-Ring starter sketch. Tilt the device — the ball follows gravity.\n"
+"// p5-ring starter sketch. Tilt the device — the ball follows gravity.\n"
 "// Save your edits in the companion app to push them over USB Serial.\n"
 "function setup() {}\n"
 "function draw() {\n"

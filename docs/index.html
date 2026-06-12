@@ -1,12 +1,12 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Q-Ring · companion</title>
+<title>p5-ring · companion</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#5ec8ff">
-<!-- Inline SVG favicon — a stylized Q-Ring: gradient disc, ring outline, tail dot. -->
+<!-- Inline SVG favicon — a stylized p5-ring: gradient disc, ring outline, tail dot. -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='32' y2='32' gradientUnits='userSpaceOnUse'><stop offset='0%25' stop-color='%235ec8ff'/><stop offset='100%25' stop-color='%232a7aa6'/></linearGradient></defs><circle cx='16' cy='16' r='15' fill='url(%23g)'/><circle cx='16' cy='15' r='8' fill='none' stroke='%230a0e14' stroke-width='3'/><circle cx='22' cy='22' r='2.5' fill='%230a0e14'/></svg>">
 <style>
   :root {
@@ -365,12 +365,12 @@
 <header>
   <div class="badge">Q</div>
   <div>
-    <div class="title">Q-Ring companion</div>
+    <div class="title">p5-ring companion</div>
     <div class="subtitle">load a sketch, preview, push to device</div>
   </div>
   <div class="header-actions">
     <button class="btn gated" id="sketch-toggle" title="toggle sketch runner vs fallback face">Sketch: ON</button>
-    <button class="btn primary" id="connect">Connect Q-Ring…</button>
+    <button class="btn primary" id="connect">Connect p5-ring…</button>
     <button class="btn" id="disconnect">Disconnect</button>
     <div class="pill" id="dev-pill"><span class="dot"></span><span id="dev-status">not connected</span></div>
   </div>
@@ -385,7 +385,7 @@
   <!-- =================== WORKSPACE =================== -->
   <div class="tab-panel active" id="tab-workspace">
     <div id="capability-banner" class="banner" style="display:none"></div>
-    <div class="gate-hint">Plug Q-Ring into a USB-C port and click <strong>Connect Q-Ring…</strong> above to unlock the sketch + log panes.</div>
+    <div class="gate-hint">Plug p5-ring into a USB-C port and click <strong>Connect p5-ring…</strong> above to unlock the sketch + log panes.</div>
 
     <!-- Theme color — visible in both sketch and face modes, since sketches
          consume it via themeR/themeG/themeB. -->
@@ -467,10 +467,10 @@
   <div class="tab-panel help" id="tab-help">
     <div class="card">
       <h2>Getting started</h2>
-      <p>Plug Q-Ring into a USB-C port. Then:</p>
+      <p>Plug p5-ring into a USB-C port. Then:</p>
       <ul>
         <li><strong>Load a sketch</strong> — pick an example from the dropdown, or open any <code>.js</code> file from your computer.</li>
-        <li><strong>Connect Q-Ring</strong> — pick the device in the browser dialog. You only do this once: the browser keeps the permission grant, so future visits auto-reconnect on page load. Plug-and-replug also re-attaches automatically.</li>
+        <li><strong>Connect p5-ring</strong> — pick the device in the browser dialog. You only do this once: the browser keeps the permission grant, so future visits auto-reconnect on page load. Plug-and-replug also re-attaches automatically.</li>
         <li><strong>Push to device</strong> — sends the sketch over USB Serial. If you picked a file, it also auto-pushes whenever you save.</li>
       </ul>
       <p>The browser shows a live preview at the same 240 × 240 resolution as the device, plus a quick check of anything that might not run on the on-device JS engine.</p>
@@ -553,7 +553,7 @@ function draw() {
       <h2>Troubleshooting</h2>
       <ul>
         <li><strong>"Device not recognized" or no port listed</strong> — unplug and replug. Windows occasionally caches a bad descriptor.</li>
-        <li><strong>Companion can't find the port</strong> — close any terminal that's holding it, then click "Connect Q-Ring".</li>
+        <li><strong>Companion can't find the port</strong> — close any terminal that's holding it, then click "Connect p5-ring".</li>
         <li><strong>Sketch shows nothing / wrong colors</strong> — check the Live log for <code>[VM] ERROR</code> lines. The most recent error is also on the device at <code>/sketches/.errors/last.log</code>.</li>
       </ul>
 
@@ -633,7 +633,7 @@ function draw() {
       <h3>Output line prefixes</h3>
       <p>Every line the firmware emits is tagged so the log is filterable. The companion uses these for the colored log:</p>
       <ul>
-        <li><code>[Q-RING]</code> — boot + lifecycle events</li>
+        <li><code>[P5-RING]</code> — boot + lifecycle events</li>
         <li><code>[LOADER]</code> — filesystem init, default seeding</li>
         <li><code>[FACE]</code> — face state transitions, alerts</li>
         <li><code>[IMU]</code> — accel reads, rotation transitions</li>
@@ -663,7 +663,7 @@ function draw() {
 </main>
 
 <footer>
-  <span>Q-Ring · made with love</span>
+  <span>p5-ring · made with love</span>
   <span>WebSerial + File System Access · use Chrome or Edge</span>
 </footer>
 
@@ -671,9 +671,9 @@ function draw() {
 <script id="examples-data" type="application/json">
 {
   "shapes": "// shapes.js — pure-drawing demo\n//\n// Shows off all the primitives + nested transforms (push/pop, rotate).\n// No sensor input, no autoRotate — the artwork stays put no matter how\n// you hold the device. A good template if you want to design a fixed\n// composition that doesn't react to tilt.\n\nfunction setup() {\n  // Nothing to set up — defaults are fine (width=height=240, no fill alpha).\n}\n\nfunction draw() {\n  // Repaint each frame so we don't accumulate trails.\n  background(10, 8, 22);\n\n  // Save the current transform, then move the origin to the canvas center.\n  // After this point, (0,0) means \"middle of the screen\".\n  push();\n  translate(120, 120);\n\n  // A slowly-advancing time variable used to drive rotations.\n  let t = frameCount * 0.012;\n\n  // Outer ring — stroke only (noFill), 1 px wide cyan circle, 200 px wide.\n  noFill();\n  stroke(80, 160, 220, 180);   // 4th arg is alpha (approximated on device)\n  strokeWeight(1);\n  circle(0, 0, 200);\n\n  // Petals: 8 ellipses arranged in a ring, each rotated 45° from the last.\n  // Each iteration we push/rotate/draw/pop so the rotation doesn't carry\n  // over to the next iteration.\n  for (let i = 0; i < 8; i++) {\n    push();\n    rotate(t + i * (PI / 4));               // 8 evenly spaced angles\n    noStroke();\n    fill(120 + i * 14, 100 + i * 16, 220);  // gradient blue-purple\n    ellipse(0, -60, 30, 60);                // petal: 30 wide, 60 tall, 60 px out\n    pop();\n  }\n\n  // Counter-rotating ring of 6 triangles, spinning the other way.\n  for (let i = 0; i < 6; i++) {\n    push();\n    rotate(-t * 1.5 + i * (PI / 3));\n    fill(255, 180, 80);\n    noStroke();\n    triangle(0, -36, -8, -22, 8, -22);      // small upward triangle\n    pop();\n  }\n\n  // Center triangle, spinning faster than the others.\n  push();\n  rotate(t * 2.2);\n  fill(255, 220, 100);\n  noStroke();\n  triangle(0, -16, -14, 10, 14, 10);\n  pop();\n\n  // Four tiny white dots at the cardinal directions (top/right/bottom/left).\n  noStroke();\n  fill(220, 240, 255);\n  for (let i = 0; i < 4; i++) {\n    push();\n    rotate(i * HALF_PI);   // 0, 90, 180, 270 degrees\n    circle(0, -88, 4);     // dot 88 px from center\n    pop();\n  }\n\n  // Restore the original (un-translated) transform.\n  pop();\n}\n",
-  "tilt": "// tilt.js — auto-rotate demo\n//\n// By default Q-Ring sketches stay put when you tilt the device — handy\n// for fixed compositions. Calling autoRotate() in setup() opts in to\n// gravity-aware behavior: the canvas turns so \"up\" on the artwork always\n// matches real-world up.\n//\n// Try tilting the device while this is running — the triangle keeps\n// pointing skyward.\n\nfunction setup() {\n  // Tell the firmware to rotate the canvas based on the accelerometer.\n  // (Once enabled, it stays on until you call noAutoRotate() or load\n  // another sketch.)\n  autoRotate();\n}\n\nfunction draw() {\n  background(8, 8, 24);\n\n  // Move origin to center, then draw an upward-pointing triangle.\n  push();\n  translate(120, 120);\n\n  noStroke();\n  fill(255, 200, 80);                  // bright yellow outer triangle\n  triangle(0, -60, -40, 40, 40, 40);\n\n  // Inner shadow triangle to suggest depth.\n  fill(20, 8, 8);\n  triangle(0, -50, -28, 32, 28, 32);\n\n  pop();\n\n  // Label so it's obvious which way the artwork is pointing.\n  fill(220, 240, 255);\n  textSize(8);\n  textAlign(CENTER);\n  text(\"UP\", 120, 80);\n}\n",
+  "tilt": "// tilt.js — auto-rotate demo\n//\n// By default p5-ring sketches stay put when you tilt the device — handy\n// for fixed compositions. Calling autoRotate() in setup() opts in to\n// gravity-aware behavior: the canvas turns so \"up\" on the artwork always\n// matches real-world up.\n//\n// Try tilting the device while this is running — the triangle keeps\n// pointing skyward.\n\nfunction setup() {\n  // Tell the firmware to rotate the canvas based on the accelerometer.\n  // (Once enabled, it stays on until you call noAutoRotate() or load\n  // another sketch.)\n  autoRotate();\n}\n\nfunction draw() {\n  background(8, 8, 24);\n\n  // Move origin to center, then draw an upward-pointing triangle.\n  push();\n  translate(120, 120);\n\n  noStroke();\n  fill(255, 200, 80);                  // bright yellow outer triangle\n  triangle(0, -60, -40, 40, 40, 40);\n\n  // Inner shadow triangle to suggest depth.\n  fill(20, 8, 8);\n  triangle(0, -50, -28, 32, 28, 32);\n\n  pop();\n\n  // Label so it's obvious which way the artwork is pointing.\n  fill(220, 240, 255);\n  textSize(8);\n  textAlign(CENTER);\n  text(\"UP\", 120, 80);\n}\n",
   "sensors": "// sensors.js — feature showcase\n//\n// Demonstrates: drawing primitives, transforms (push/pop/translate), text,\n// accelerometer readouts, and live frameCount. Tilt the device while it\n// runs — the arrow tracks gravity and the numbers update in real time.\n//\n// Note: this sketch does NOT call autoRotate(), so the canvas stays\n// pinned upright on screen. The arrow alone moves to show direction.\n\nfunction setup() {}\n\nfunction draw() {\n  background(8, 10, 18);\n\n  // Light-blue crosshair — visual reference for the center of the screen.\n  stroke(40, 80, 110);\n  strokeWeight(1);\n  line(0, 120, 240, 120);   // horizontal\n  line(120, 0, 120, 240);   // vertical\n\n  // ─── tilt arrow ───\n  // Move origin to center so positive accelX = right, positive accelY = down.\n  push();\n  translate(width / 2, height / 2);\n  let ax = accelX * 70;             // scale up by 70 for visibility\n  let ay = accelY * 70;\n  stroke(255, 200, 80);\n  strokeWeight(3);\n  line(0, 0, ax, ay);               // shaft of the arrow\n  noStroke();\n  fill(255, 220, 130);\n  circle(ax, ay, 12);               // arrowhead (just a dot for simplicity)\n  fill(255);\n  circle(ax + 3, ay - 3, 4);        // tiny highlight to give it shape\n  pop();\n\n  // ─── orbit of small dots ───\n  // Six dots evenly spaced around a circle, all rotating together.\n  push();\n  translate(width / 2, height / 2);\n  noStroke();\n  for (let i = 0; i < 6; i++) {\n    let a = frameCount * 0.03 + i * 1.0472;   // 1.0472 ≈ 60°\n    fill(80 + i * 25, 200, 255);              // gradient blue\n    circle(cos(a) * 95, sin(a) * 95, 7);\n  }\n  pop();\n\n  // ─── live readout text ───\n  // mJS forbids \"string + number\" implicit concatenation, so wrap each\n  // number with str(). round(x*100)/100 gives 2-decimal display.\n  fill(220, 230, 240);\n  textSize(8);\n  textAlign(LEFT);\n  text(\"accelX \" + str(round(accelX * 100) / 100), 70, 38);\n  text(\"accelY \" + str(round(accelY * 100) / 100), 70, 50);\n  text(\"accelZ \" + str(round(accelZ * 100) / 100), 70, 62);\n\n  textAlign(CENTER);\n  text(\"frame \" + str(frameCount), 120, 205);\n}\n",
-  "rain": "// rain.js — particle system, gravity-aware\r\n//\r\n// A simple \"falling rain\" effect. Each drop has a position (x, y), a\r\n// downward velocity (vy), and a length. autoRotate() keeps the rain\r\n// falling toward real-world down no matter how you hold the device.\r\n//\r\n// Demonstrates: arrays of small objects, setup-time initialization,\r\n// per-frame state mutation, autoRotate().\r\n\r\nlet drops = [];   // array of drop objects, populated in setup()\r\nlet N = 35;   // reduced — the on-device interpreter has FFI overhead per call       // how many drops to simulate\r\n\r\nfunction setup() {\r\n  // Canvas tracks gravity — \"down\" on screen is always real-world down.\r\n  autoRotate();\r\n\r\n  // Pre-allocate every drop once (much cheaper than creating new objects\r\n  // every frame inside draw()).\r\n  for (let i = 0; i < N; i++) {\r\n    drops.push({\r\n      x: random(0, 240),\r\n      y: random(0, 240),       // start scattered across the screen\r\n      vy: random(2, 5),        // each drop falls at its own speed\r\n      len: random(6, 16)       // and has its own visual length\r\n    });\r\n  }\r\n}\r\n\r\nfunction draw() {\r\n  // Deep blue background — repaint each frame so old drops don't trail.\r\n  background(6, 8, 18);\r\n\r\n  // Light cyan strokes for the drops themselves.\r\n  stroke(120, 200, 255, 180);\r\n  strokeWeight(1);\r\n\r\n  for (let i = 0; i < N; i++) {\r\n    let d = drops[i];\r\n\r\n    // Drops fall straight down on the rotated canvas.\r\n    d.y = d.y + d.vy;\r\n\r\n    // Each drop is a short vertical line.\r\n//    line(d.x, d.y, d.x, d.y + d.len);\r\n      fill(255);\r\n      textSize(20);\r\n      text('Q',d.x, d.y);\r\n\r\n    // Wrap around the bottom so the field never empties out.\r\n    if (d.y > 240) { d.y = -10; d.x = random(0, 240); }\r\n  }\r\n}\r\n",
+  "rain": "// rain.js — particle system, gravity-aware\r\n//\r\n// A simple \"falling rain\" effect. Each drop has a position (x, y), a\r\n// downward velocity (vy), and a length. autoRotate() keeps the rain\r\n// falling toward real-world down no matter how you hold the device.\r\n//\r\n// Demonstrates: arrays of small objects, setup-time initialization,\r\n// per-frame state mutation, autoRotate().\r\n\r\nlet drops = [];   // array of drop objects, populated in setup()\r\nlet N = 35;   // reduced — the on-device interpreter has FFI overhead per call       // how many drops to simulate\r\n\r\nfunction setup() {\r\n  // Canvas tracks gravity — \"down\" on screen is always real-world down.\r\n  autoRotate();\r\n\r\n  // Pre-allocate every drop once (much cheaper than creating new objects\r\n  // every frame inside draw()).\r\n  for (let i = 0; i < N; i++) {\r\n    drops.push({\r\n      x: random(0, 240),\r\n      y: random(0, 240),       // start scattered across the screen\r\n      vy: random(2, 5),        // each drop falls at its own speed\r\n      len: random(6, 16)       // and has its own visual length\r\n    });\r\n  }\r\n}\r\n\r\nfunction draw() {\r\n  // Deep blue background — repaint each frame so old drops don't trail.\r\n  background(6, 8, 18);\r\n\r\n  // Light cyan strokes for the drops themselves.\r\n  stroke(120, 200, 255, 180);\r\n  strokeWeight(1);\r\n\r\n  for (let i = 0; i < N; i++) {\r\n    let d = drops[i];\r\n\r\n    // Drops fall straight down on the rotated canvas.\r\n    d.y = d.y + d.vy;\r\n\r\n    // Each drop is a short vertical line.\r\n//    line(d.x, d.y, d.x, d.y + d.len);\r\n      fill(255);\r\n      textSize(20);\r\n      text('p',d.x, d.y);\r\n\r\n    // Wrap around the bottom so the field never empties out.\r\n    if (d.y > 240) { d.y = -10; d.x = random(0, 240); }\r\n  }\r\n}\r\n",
   "wave": "// wave.js — animated sine wave field\n//\n// Two overlapping sine waves of different frequencies and colors, with a\n// white dot riding the top wave. The phase scrolls forever via frameCount.\n//\n// Demonstrates: for-loops, sin() for animation, multiple stroke colors,\n// \"scrolling\" by reading frameCount.\n\nfunction setup() {}\n\nfunction draw() {\n  // Dark plum background.\n  background(10, 6, 24);\n\n  // We're drawing 1-px points along the wave, so we use stroke (not fill).\n  noFill();\n  strokeWeight(2);\n\n  // `t` is the time-phase. Bigger multiplier = faster motion.\n  let t = frameCount * 0.04;\n\n  // ── upper wave: cyan ──\n  // Step across the screen 4 px at a time (cheaper than every pixel).\n  // y = base + amplitude * sin(spatial_frequency * x + time_phase)\n  stroke(120, 220, 255);\n  for (let x = 0; x < 240; x = x + 4) {\n    point(x, 110 + sin(x * 0.05 + t) * 30);\n  }\n\n  // ── lower wave: pink, different frequency, scrolls the other way ──\n  stroke(255, 140, 180);\n  for (let x = 0; x < 240; x = x + 4) {\n    point(x, 150 + sin(x * 0.06 - t * 1.4) * 24);\n  }\n\n  // ── the ball rides the upper wave ──\n  // It moves left-to-right and wraps around every 200 frames.\n  let bx = 20 + ((frameCount * 1.5) % 200);\n  let by = 110 + sin(bx * 0.05 + t) * 30;\n  noStroke();\n  fill(255);\n  circle(bx, by, 8);\n}\n",
   "ryoji": "// ryoji.js — after the data-art of Ryoji Ikeda.\n// Barcode is DL-cached and re-recorded every 10 frames.\n// Scan lines, read-head, flash, brackets draw live each frame.\n\nlet _dlReady = 0;\n\nfunction draw() {\n  let t = frameCount;\n\n  // Barcode + rules: background is inside the DL so dlPlay() gets a clean slate\n  if (t % 10 === 0 || !_dlReady) {\n    _dlReady = 1;\n    dlRecord();\n    background(0);\n    fill(255);\n    noStroke();\n    for (let i = 0; i < 30; i = i + 1) {\n      if (random(1) > 0.5) {\n        let x = i * 8;\n        _tr(x, 0, x+7, 0, x+7, 240);\n        _tr(x, 0, x+7, 240, x, 240);\n      }\n    }\n    stroke(0);\n    strokeWeight(1);\n    for (let y = 0; y < 240; y = y + 40) {\n      line(0, y, 240, y);\n    }\n    dlEnd();\n  } else {\n    dlPlay();\n  }\n\n  // Full-frame flash: 1 white frame every 30\n  if (t % 30 === 0) {\n    noStroke();\n    fill(255);\n    rect(0, 0, 240, 240);\n  }\n\n  // Flashing center box: 2 frames on per 14-frame cycle\n  if (t % 14 < 2) {\n    fill(0);\n    stroke(255);\n    strokeWeight(1);\n    rect(80, 80, 80, 80);\n  }\n\n  // Four scan lines at different speeds — interference patterns\n  stroke(255);\n  strokeWeight(1);\n  line(0, (t * 3) % 240, 240, (t * 3) % 240);\n  line(0, (t * 7) % 240, 240, (t * 7) % 240);\n  line(0, (t + 60) % 240, 240, (t + 60) % 240);\n  line((t * 2) % 240, 0, (t * 2) % 240, 240);\n\n  // Sparse pixel noise — short dashes at random positions each frame\n  for (let n = 0; n < 3; n = n + 1) {\n    let px = random(240);\n    let py = random(240);\n    line(px, py, px, py + 4);\n  }\n\n  // Corner brackets\n  noFill();\n  stroke(255);\n  strokeWeight(1);\n  let bl = 18;\n  line(0, 0, bl, 0);             line(0, 0, 0, bl);\n  line(240 - bl, 0, 240, 0);     line(240, 0, 240, bl);\n  line(0, 240 - bl, 0, 240);     line(0, 240, bl, 240);\n  line(240 - bl, 240, 240, 240); line(240, 240 - bl, 240, 240);\n}\n",
   "clock": "// clock.js — analog clock showing local wall time.\n//\n// CLOCK_OFFSET_S is injected at upload time (seconds since midnight,\n// local time). millis() tracks elapsed time from boot; adding the offset\n// gives the correct wall time. Re-push after a device reboot to re-sync.\n\nlet CLOCK_OFFSET_S = 0;\n\nfunction setup() {\n  // A clock face is one of those rare cases where you DO want the canvas\n  // to rotate with the device — so \"up\" on the dial always faces up.\n  autoRotate();\n}\n\nfunction draw() {\n  background(12, 8, 20);\n\n  // Seconds elapsed since boot, as a float.\n  let secs = millis() / 1000 + CLOCK_OFFSET_S;\n\n  // Move origin to the canvas center; every later coord is relative to it.\n  push();\n  translate(120, 120);\n\n  // ── dial: outline + tick marks ──\n  noFill();\n  stroke(60, 80, 110);\n  strokeWeight(2);\n  circle(0, 0, 200);\n\n  stroke(120, 160, 200);\n  for (let i = 0; i < 12; i++) {\n    push();\n    rotate(i * (PI / 6));          // 12 hour-positions\n    line(0, -95, 0, -85);          // a short tick near the rim\n    pop();\n  }\n\n  // ── second hand: thin orange ──\n  // 60 seconds = full rotation, so divide secs by 60.\n  push();\n  rotate(secs * (TWO_PI / 60));\n  stroke(255, 160, 80);\n  strokeWeight(2);\n  line(0, 0, 0, -85);\n  pop();\n\n  // ── minute hand: thicker white ──\n  push();\n  rotate((secs / 60) * (TWO_PI / 60));\n  stroke(220, 240, 255);\n  strokeWeight(4);\n  line(0, 0, 0, -65);\n  pop();\n\n  // ── hour hand: thickest, cyan ──\n  push();\n  rotate((secs / 3600) * (TWO_PI / 12));\n  stroke(120, 200, 255);\n  strokeWeight(5);\n  line(0, 0, 0, -42);\n  pop();\n\n  // Center cap covers where all the hands meet.\n  noStroke();\n  fill(255);\n  circle(0, 0, 8);\n\n  pop();\n}\n",
@@ -960,8 +960,8 @@ function startPreviewRender(src) {
   // Wipe any prior user setup/draw + stashes
   window.setup = undefined;
   window.draw  = undefined;
-  window.__qringUserSetup = null;
-  window.__qringUserDraw  = null;
+  window.__p5ringUserSetup = null;
+  window.__p5ringUserDraw  = null;
 
   // Substitute var → let so the sketch loads same as the device does.
   const src2 = src.replace(/(^|[\s;{])var\s+/g, '$1let ');
@@ -970,8 +970,8 @@ function startPreviewRender(src) {
   // Function scope. (Function declarations inside `new Function(...)` are
   // local to that function's scope, so they don't reach window on their own.)
   const wrapped = src2 + `
-;try { if (typeof setup === 'function') window.__qringUserSetup = setup; } catch(e) {}
-;try { if (typeof draw  === 'function') window.__qringUserDraw  = draw;  } catch(e) {}`;
+;try { if (typeof setup === 'function') window.__p5ringUserSetup = setup; } catch(e) {}
+;try { if (typeof draw  === 'function') window.__p5ringUserDraw  = draw;  } catch(e) {}`;
 
   let evalError = null;
   try { (new Function(wrapped))(); }
@@ -982,7 +982,7 @@ function startPreviewRender(src) {
     empty.innerHTML = `eval error<br><span style="color:var(--bad)">${evalError.message}</span>`;
     return;
   }
-  if (!window.__qringUserSetup && !window.__qringUserDraw) {
+  if (!window.__p5ringUserSetup && !window.__p5ringUserDraw) {
     empty.style.display = 'grid';
     empty.innerHTML = `no setup() or draw() — nothing to preview`;
     return;
@@ -998,8 +998,8 @@ function startPreviewRender(src) {
     window.accelY = Math.cos(t * 1.1) * 0.3;
   };
 
-  const userSetup = window.__qringUserSetup;
-  const userDraw  = window.__qringUserDraw;
+  const userSetup = window.__p5ringUserSetup;
+  const userDraw  = window.__p5ringUserDraw;
   window.setup = function () {
     createCanvas(240, 240);
     frameRate(30);
@@ -1088,7 +1088,7 @@ async function connectDevice() {
   }
 }
 
-// Try to silently reconnect to a previously-authorized Q-Ring. WebSerial
+// Try to silently reconnect to a previously-authorized p5-ring. WebSerial
 // keeps the permission grant across sessions on http(s) and file:// origins
 // (Chrome 96+), so once the user has clicked Connect once, getPorts() returns
 // that port and we can open it without showing the picker again.
@@ -1103,7 +1103,7 @@ async function tryAutoReconnect() {
       log('no remembered device — click Connect once and the browser will remember it', 'evt');
       return;
     }
-    // The user can't authorize a non-Q-Ring port through our picker (we
+    // The user can't authorize a non-p5-ring port through our picker (we
     // filter on VID 0x2E8A there), so any port in this list is ours.
     // Don't re-filter — just take the first one.
     const p = ports[0];
@@ -1127,7 +1127,7 @@ if (HAS_SERIAL) {
     }
   });
   navigator.serial.addEventListener('connect', (e) => {
-    // If a Q-Ring is plugged back in and we don't have one open, auto-attach.
+    // If a p5-ring is plugged back in and we don't have one open, auto-attach.
     if (!port) {
       const info = e.target.getInfo();
       if (info.usbVendorId === 0x2E8A) _attachPort(e.target, true).catch(()=>{});
@@ -1163,7 +1163,7 @@ async function readLoop() {
         if (line.length === 0) continue;
         const kind = line.includes('ERROR') ? 'err'
                   : line.includes('Sketch reloaded') ? 'ok'
-                  : /\[(LOADER|FACE|VM|IMU|Q-RING|CMD|UPLOAD|INFO|LIST)\]/.test(line) ? 'evt'
+                  : /\[(LOADER|FACE|VM|IMU|P5-RING|CMD|UPLOAD|INFO|LIST)\]/.test(line) ? 'evt'
                   : null;
         log(line, kind);
       }
@@ -1273,7 +1273,7 @@ paintSketchToggle();
 setConnected(false);
 log('ready. load a sketch + connect the device.', 'evt');
 
-// Attempt silent reconnect to a previously-authorized Q-Ring. WebSerial
+// Attempt silent reconnect to a previously-authorized p5-ring. WebSerial
 // remembers the grant across sessions, so after the first explicit Connect
 // the page just picks up where it left off on every reload.
 tryAutoReconnect();

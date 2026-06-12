@@ -1,4 +1,4 @@
-// Q-Ring starter sketch.
+// p5-ring starter sketch.
 //
 // Tilt the device — the circle follows gravity.
 // Edit this file in any editor, save, then eject the drive to reload.

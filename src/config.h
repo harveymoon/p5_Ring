@@ -1,11 +1,11 @@
 #pragma once
 
 // =============================================================================
-// Q-Ring — Configuration
+// p5-ring — Configuration
 // Waveshare RP2040-LCD-1.28  (240x240 round IPS, GC9A01A SPI)
 //
-// PlatformIO env: [env:q_ring] in platformio.ini.
-// USB exposes both CDC (Serial @ 115200) and MSC (FatFS drive labeled "Q-RING").
+// PlatformIO env: [env:p5_ring] in platformio.ini.
+// USB exposes both CDC (Serial @ 115200) and MSC (FatFS drive labeled "P5-RING").
 // =============================================================================
 
 #include "face.h"   // for FaceState in STANDBY_FACE_STATE
@@ -38,5 +38,5 @@
 #define SKETCH_ERROR_DIR          "/sketches/.errors"
 #define SKETCH_ERROR_LAST         "/sketches/.errors/last.log"
 #define SKETCH_RELOAD_DEBOUNCE_MS 250
-#define DRIVE_LABEL               "Q-RING"
+#define DRIVE_LABEL               "P5-RING"
 #define STANDBY_FACE_STATE        FaceState::HAPPY

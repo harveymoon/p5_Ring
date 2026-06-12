@@ -3,7 +3,7 @@
 #include <stddef.h>
 
 // =============================================================================
-// Q-Ring sketch VM — mJS engine + p5 bindings + watchdog.
+// p5-ring sketch VM — mJS engine + p5 bindings + watchdog.
 //
 // Lifecycle:
 //   sketch_vm_init()           — once, in setup(), AFTER face_init().

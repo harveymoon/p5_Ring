@@ -1,7 +1,7 @@
 {
-  "name": "Q-Ring companion",
-  "short_name": "Q-Ring",
-  "description": "Load sketches and control your Q-Ring over USB.",
+  "name": "p5-ring companion",
+  "short_name": "p5-ring",
+  "description": "Load sketches and control your p5-ring over USB.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
