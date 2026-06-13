@@ -1,82 +1,29 @@
-// shapes.js — pure-drawing demo
+// ascii.js — ASCII-art tree drawn from one multi-line string.
 //
-// Shows off all the primitives + nested transforms (push/pop, rotate).
-// No sensor input, no autoRotate — the artwork stays put no matter how
-// you hold the device. A good template if you want to design a fixed
-// composition that doesn't react to tilt.
+// The firmware's text() splits on '\n' and aligns each line independently,
+// so a string with embedded \n renders as a block of art. NOTE: raw newlines
+// inside a quoted string are a parse error in mJS — every line break here is
+// an explicit \n, and each literal backslash in the art is escaped as \\.
 
-
-
-function setup() {
-    autoRotate();
-    
-    
-
-}
+function setup() {}
 
 function draw() {
-  background(0);
-  noFill();
+  background(8, 14, 20);
 
+  fill(120, 220, 140);
+  textSize(8);
+  textAlign(CENTER);
 
+  let art =
+    '     _\n' +
+    '      _(_)_\n' +
+    ' @@@@ (_)@(_)  wWWWw\n' +
+    '@@()@@  (_)\\   (___)\n' +
+    ' @@@@    \\|     Y\n' +
+    '  /      \\|    \\|/\n' +
+    '\\ |    \\  |  / |\n' +
+    '\\\\|// \\\\|//\\\\|//\n' +
+    '^^^^^^^^^^^^^^^^^^';
 
-  fill(255);
-//  textFont('monospace');
-  textSize(20);
-//  textLeading(8);
-
-//  let art = `
-//        _      
-//      _(_)_
-// @@@@ (_)@(_)  wWWWw
-//@@()@@  (_)\\   (___)
-// @@@@    \\|     Y
-//  /      \\|    \\|/
-//\\ |    \\  |  / |
-//\\\\|// \\\\|//\\\\|//
-//^^^^^^^^^^^^^^^^^^
-//`;
-
-//  text(':D', 80, 140);
-    
-
-//  text(' 
-//    @@@
-//   @@@@@
-//    @@@
-//     |
-//    /|\\
-//     |', 
-//       30, 60);
-//    
-     text(' 
-     _      
-      _(_)_
- @@@@ (_)@(_)  wWWWw
-@@()@@  (_)\\   (___)
- @@@@    \\|     Y
-  /      \\|    \\|/
-\\ |    \\  |  / |
-\\\\|/ / \\\\|//\\\\|//
-^^^^^^^^^^^^^^^^^^', 
-       10, 60);
-    
-//  text(' 
-//    ._____A_____,
-// |`          :\
-// | `         : B
-// |  `        :  \
-// C   +-----A-----+
-// |   :       :   :
-// |__ : _A____:   :
-// `   :        \  :
-//  `  :         B :
-//   ` :          \:
-//    `:_____A_____>
-//
-//', 
-//       10, 60);
-//    
-    
-    
+  text(art, 120, 96);
 }

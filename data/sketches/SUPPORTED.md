@@ -65,10 +65,11 @@ The on-device engine is **mJS**. Everything is synchronous. Compared to p5 web:
 
 - Aim for under ~300 shapes per frame.
 - Pre-allocate arrays in `setup()`, not in `draw()`.
-- The watchdog flags a sketch if `draw()` exceeds 200 ms for 3 frames in a row.
+- The watchdog flags a sketch if `draw()` exceeds 700 ms for 3 frames in a row.
   When that happens you'll see a brief red error overlay, then the device drops
   back to its built-in happy face. Errors are logged to
-  `/sketches/.errors/last.log` — pop the drive in to read them.
+  `/sketches/.errors/last.log`; the last crash also prints to the serial log,
+  visible in the companion's log pane.
 
 ---
 
@@ -86,4 +87,5 @@ function draw() {
 }
 ```
 
-Save this as `sketches/current.js` and eject the drive.
+Push this with the companion app (or drop it in a watched folder for the dev
+CLI) and the device reloads it over USB within ~500 ms.

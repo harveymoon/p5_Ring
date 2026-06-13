@@ -1176,9 +1176,31 @@ const enc = new TextEncoder();
 async function writeBytes(bytes) { if (!writer) return false; await writer.write(bytes); return true; }
 async function sendCommand(cmd)  { log(`> ${cmd}`, 'tx'); await writeBytes(enc.encode(cmd + '\n')); }
 
+// Sketches that declare `let CLOCK_OFFSET_S = 0;` get the host's current
+// seconds-since-local-midnight substituted at push time — the device has no
+// real-time clock, so this is how clock.js shows actual wall time. Re-push
+// after a reboot to re-sync.
+function injectClockOffset(text) {
+  if (!/let\s+CLOCK_OFFSET_S\s*=\s*0\s*;/.test(text)) return text;
+  const now = new Date();
+  const secs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+  return text.replace(/let\s+CLOCK_OFFSET_S\s*=\s*0\s*;/,
+                      `let CLOCK_OFFSET_S = ${secs};`);
+}
+
+// Must match SKETCH_SRC_MAX in src/config.h. The device rejects an oversized
+// UPLOAD header and then parses the streamed body as serial commands, so guard
+// here for a clear error instead of that confusing failure mode.
+const SKETCH_SRC_MAX = 8192;
+
 async function uploadToDevice(devicePath, text) {
   if (!writer) { log(`(not connected — skipping upload of ${devicePath})`, 'err'); return; }
+  text = injectClockOffset(text);
   const body = enc.encode(text);
+  if (body.length > SKETCH_SRC_MAX) {
+    log(`too big: ${body.length} bytes > ${SKETCH_SRC_MAX} limit — not pushed`, 'err');
+    return;
+  }
   try {
     await writeBytes(enc.encode(`UPLOAD ${devicePath} ${body.length}\n`));
     await writeBytes(body);

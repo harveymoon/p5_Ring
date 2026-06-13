@@ -1,7 +1,7 @@
 // p5-ring starter sketch.
 //
 // Tilt the device — the circle follows gravity.
-// Edit this file in any editor, save, then eject the drive to reload.
+// Edit it in the companion app and save to push it over USB.
 
 function setup() {
   // nothing to do — the canvas is already 240x240

@@ -24,7 +24,7 @@ static uint32_t    _last_dt_ms   = 0;
 static uint32_t    _last_blit_ms = 0;
 static uint32_t    _last_tick_ms = 0;
 
-static char _src_buf[SKETCH_SRC_MAX];
+static char _src_buf[SKETCH_SRC_MAX + 1];  // +1: sketch_loader_read caps at max-1
 // Combined buffer: prelude + user source. Prelude is ~3 KB, user source up to
 // SKETCH_SRC_MAX (~8 KB), giving ~12 KB max input to mjs_exec.
 static char _exec_buf[SKETCH_SRC_MAX + 4096];

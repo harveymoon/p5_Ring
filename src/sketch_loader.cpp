@@ -25,7 +25,9 @@ static volatile bool      _force_reload = false;
 static uint32_t           _last_crc      = 0;
 static sketch_reload_cb_t _cb            = nullptr;
 static bool               _initialized   = false;
-static char               _scratch[SKETCH_SRC_MAX];
+// +1 so sketch_loader_read()'s `max - 1` cap still admits a full
+// SKETCH_SRC_MAX-byte sketch (the upload path accepts exactly that size).
+static char               _scratch[SKETCH_SRC_MAX + 1];
 
 static uint32_t _crc32(const uint8_t* data, size_t n, uint32_t crc = 0) {
     crc = ~crc;
@@ -77,33 +79,17 @@ static void _seed_defaults(void) {
     }
     if (new_examples) Serial.printf("[LOADER] seeded %d example(s)\n", new_examples);
 
-    // Prune any /sketches/examples/*.js files that aren't in the current
-    // DEFAULT_EXAMPLES set. Keeps the on-device list in sync with what ships
-    // when example names change (e.g. shake.js → birthday.js).
-    // Collect stale paths first (mutating LittleFS during Dir iteration
-    // invalidates the iterator).
-    String stale[16];
-    int n_stale = 0;
-    {
-        Dir d = LittleFS.openDir("/sketches/examples");
-        while (d.next() && n_stale < 16) {
-            char full[80];
-            snprintf(full, sizeof(full), "/sketches/examples/%s", d.fileName().c_str());
-            bool known = false;
-            for (const DefaultExample* e = DEFAULT_EXAMPLES; e->path; e++) {
-                if (strcmp(e->path, full) == 0) { known = true; break; }
-            }
-            if (!known) stale[n_stale++] = String(full);
-        }
+    // Prune only known-stale legacy names (examples that were renamed in a
+    // firmware update). Anything else in /sketches/examples/ was put there by
+    // the user, the companion, or `uploadfs` — never delete those.
+    static const char* STALE_EXAMPLES[] = {
+        "/sketches/examples/shake.js",   // renamed to birthday.js
+        nullptr
+    };
+    for (const char** s = STALE_EXAMPLES; *s; s++) {
+        if (LittleFS.exists(*s) && LittleFS.remove(*s))
+            Serial.printf("[LOADER] pruned stale example %s\n", *s);
     }
-    int pruned = 0;
-    for (int i = 0; i < n_stale; i++) {
-        if (LittleFS.remove(stale[i])) {
-            Serial.printf("[LOADER] pruned %s\n", stale[i].c_str());
-            pruned++;
-        }
-    }
-    if (pruned) Serial.printf("[LOADER] pruned %d stale example(s) total\n", pruned);
 }
 
 // =============================================================================

@@ -74,6 +74,7 @@ static LGFX_Sprite* _cv = nullptr;
 static uint8_t  _dl_buf[DL_BUF_SIZE];
 static int      _dl_len       = 0;
 static bool     _dl_recording = false;
+static bool     _dl_overflow  = false;
 
 enum DLCmd : uint8_t {
     DLC_BG      = 1,  // u16: bg rgb565
@@ -86,14 +87,20 @@ enum DLCmd : uint8_t {
     DLC_LINE    = 8,  // 4×i16: x1,y1,x2,y2        (post-transform)
 };
 
+// Reserve room for a WHOLE command before writing any byte of it. The old
+// per-byte checks could write an opcode and then drop its operands when the
+// buffer filled mid-command — dl_play() would decode the orphaned bytes as
+// garbage. Once full, recording stops (sticky until the next dl_record()).
+static inline bool _dl_fit(int bytes) {
+    if (_dl_overflow || _dl_len + bytes > DL_BUF_SIZE) { _dl_overflow = true; return false; }
+    return true;
+}
 static inline void _dl_u8(uint8_t v) {
-    if (_dl_len + 1 < DL_BUF_SIZE) _dl_buf[_dl_len++] = v;
+    _dl_buf[_dl_len++] = v;
 }
 static inline void _dl_u16(uint16_t v) {
-    if (_dl_len + 2 < DL_BUF_SIZE) {
-        _dl_buf[_dl_len++] = (uint8_t)(v & 0xFF);
-        _dl_buf[_dl_len++] = (uint8_t)(v >> 8);
-    }
+    _dl_buf[_dl_len++] = (uint8_t)(v & 0xFF);
+    _dl_buf[_dl_len++] = (uint8_t)(v >> 8);
 }
 static inline void _dl_i16(int v) { _dl_u16((uint16_t)(int16_t)v); }
 
@@ -150,43 +157,43 @@ extern "C" {
 void p5_background(int r, int g, int b) {
     _st.bg_rgb565 = _rgb565(r, g, b);
     _cv->fillScreen(_st.bg_rgb565);
-    if (_dl_recording) { _dl_u8(DLC_BG); _dl_u16(_st.bg_rgb565); }
+    if (_dl_recording && _dl_fit(3)) { _dl_u8(DLC_BG); _dl_u16(_st.bg_rgb565); }
 }
 
 void p5_fill(int r, int g, int b) {
     _st.fill_rgb565 = _rgb565(r, g, b);
     _st.no_fill = false;
-    if (_dl_recording) { _dl_u8(DLC_FILL); _dl_u16(_st.fill_rgb565); }
+    if (_dl_recording && _dl_fit(3)) { _dl_u8(DLC_FILL); _dl_u16(_st.fill_rgb565); }
 }
 void p5_fillA(int r, int g, int b, int a) {
     _st.fill_rgb565 = _alpha_blend(_rgb565(r, g, b), _st.bg_rgb565, a);
     _st.no_fill = false;
-    if (_dl_recording) { _dl_u8(DLC_FILL); _dl_u16(_st.fill_rgb565); }
+    if (_dl_recording && _dl_fit(3)) { _dl_u8(DLC_FILL); _dl_u16(_st.fill_rgb565); }
 }
 void p5_no_fill(void) {
     _st.no_fill = true;
-    if (_dl_recording) _dl_u8(DLC_NO_FILL);
+    if (_dl_recording && _dl_fit(1)) _dl_u8(DLC_NO_FILL);
 }
 
 void p5_stroke(int r, int g, int b) {
     _st.stroke_rgb565 = _rgb565(r, g, b);
     _st.no_stroke = false;
-    if (_dl_recording) { _dl_u8(DLC_STROKE); _dl_u16(_st.stroke_rgb565); }
+    if (_dl_recording && _dl_fit(3)) { _dl_u8(DLC_STROKE); _dl_u16(_st.stroke_rgb565); }
 }
 void p5_strokeA(int r, int g, int b, int a) {
     _st.stroke_rgb565 = _alpha_blend(_rgb565(r, g, b), _st.bg_rgb565, a);
     _st.no_stroke = false;
-    if (_dl_recording) { _dl_u8(DLC_STROKE); _dl_u16(_st.stroke_rgb565); }
+    if (_dl_recording && _dl_fit(3)) { _dl_u8(DLC_STROKE); _dl_u16(_st.stroke_rgb565); }
 }
 void p5_no_stroke(void) {
     _st.no_stroke = true;
-    if (_dl_recording) _dl_u8(DLC_NO_STR);
+    if (_dl_recording && _dl_fit(1)) _dl_u8(DLC_NO_STR);
 }
 
 void p5_stroke_weight(int w) {
     if (w < 1) w = 1; if (w > 8) w = 8;
     _st.weight = (uint8_t)w;
-    if (_dl_recording) { _dl_u8(DLC_SW); _dl_u8(_st.weight); }
+    if (_dl_recording && _dl_fit(2)) { _dl_u8(DLC_SW); _dl_u8(_st.weight); }
 }
 
 // NOTE: all drawing primitives take `int` coords because mJS's FFI dispatch
@@ -297,7 +304,7 @@ void p5_line(int x1, int y1, int x2, int y2) {
     apply(_st.xform, (float)x1, (float)y1, a, b);
     apply(_st.xform, (float)x2, (float)y2, c, d);
     _stroke_line(a, b, c, d);
-    if (_dl_recording) { _dl_u8(DLC_LINE); _dl_i16(a); _dl_i16(b); _dl_i16(c); _dl_i16(d); }
+    if (_dl_recording && _dl_fit(9)) { _dl_u8(DLC_LINE); _dl_i16(a); _dl_i16(b); _dl_i16(c); _dl_i16(d); }
 }
 
 void p5_point(int x, int y) {
@@ -318,7 +325,7 @@ void p5_triangle(int x1, int y1, int x2, int y2, int x3, int y3) {
         _stroke_line(c, d, e, f);
         _stroke_line(e, f, a, b);
     }
-    if (_dl_recording) {
+    if (_dl_recording && _dl_fit(13)) {
         _dl_u8(DLC_TRI);
         _dl_i16(a); _dl_i16(b); _dl_i16(c); _dl_i16(d); _dl_i16(e); _dl_i16(f);
     }
@@ -430,8 +437,12 @@ const char* p5_str(double n) {
 }
 
 // ── Display-list control ─────────────────────────────────────────────────────
-void dl_record(void) { _dl_len = 0; _dl_recording = true; }
-void dl_end(void)    { _dl_recording = false; }
+void dl_record(void) { _dl_len = 0; _dl_overflow = false; _dl_recording = true; }
+void dl_end(void)    {
+    _dl_recording = false;
+    if (_dl_overflow)
+        Serial.printf("[VM] display list full (%d bytes) — recording truncated\n", _dl_len);
+}
 
 // Stroke-line helper for dl_play() — mirrors _stroke_line() but takes explicit
 // color and weight so it doesn't depend on _st (which is reset between frames).
@@ -467,16 +478,21 @@ void dl_play(void) {
         i += 2; return v;
     };
 
+    // Operand byte counts per opcode — replay must never read past _dl_len
+    // (a truncated or corrupt buffer would otherwise walk off the array).
+    auto have = [&](int bytes) -> bool { return i + bytes <= _dl_len; };
+
     while (i < _dl_len) {
         uint8_t cmd = _dl_buf[i++];
         switch (cmd) {
-        case DLC_BG:      { _cv->fillScreen(rd_u16());                              break; }
-        case DLC_FILL:    { cur_fill   = rd_u16(); no_fill   = false;               break; }
+        case DLC_BG:      { if (!have(2)) return; _cv->fillScreen(rd_u16());        break; }
+        case DLC_FILL:    { if (!have(2)) return; cur_fill   = rd_u16(); no_fill   = false; break; }
         case DLC_NO_FILL: { no_fill    = true;                                      break; }
-        case DLC_STROKE:  { cur_stroke = rd_u16(); no_stroke = false;               break; }
+        case DLC_STROKE:  { if (!have(2)) return; cur_stroke = rd_u16(); no_stroke = false; break; }
         case DLC_NO_STR:  { no_stroke  = true;                                      break; }
-        case DLC_SW:      { sw = _dl_buf[i++];                                      break; }
+        case DLC_SW:      { if (!have(1)) return; sw = _dl_buf[i++];                break; }
         case DLC_TRI: {
+            if (!have(12)) return;
             int x1 = rd_i16(); int y1 = rd_i16();
             int x2 = rd_i16(); int y2 = rd_i16();
             int x3 = rd_i16(); int y3 = rd_i16();
@@ -489,6 +505,7 @@ void dl_play(void) {
             break;
         }
         case DLC_LINE: {
+            if (!have(8)) return;
             int x1 = rd_i16(); int y1 = rd_i16();
             int x2 = rd_i16(); int y2 = rd_i16();
             if (!no_stroke) _dl_stroke_line_c(x1, y1, x2, y2, cur_stroke, sw);

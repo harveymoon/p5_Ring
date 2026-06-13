@@ -23,6 +23,7 @@
 
 #include <Arduino.h>
 #include <hardware/clocks.h>
+#include <hardware/watchdog.h>
 #include "config.h"
 #include "display_config.h"
 #include "face.h"
@@ -43,10 +44,12 @@ static uint16_t _serial_len = 0;
 // ── UPLOAD protocol state ────────────────────────────────────────────────────
 //   "UPLOAD <path> <len>\n" then <len> raw bytes, then "\nEND\n"
 static bool     _uploading       = false;
+static bool     _upload_discard  = false;  // header rejected: eat the body, write nothing
 static char     _upload_path[64] = {0};
 static uint32_t _upload_remain   = 0;
 static char     _upload_buf[SKETCH_SRC_MAX];
 static uint32_t _upload_written  = 0;
+static uint32_t _upload_last_ms  = 0;      // for the mid-upload inactivity timeout
 
 static void _on_sketch_reload(const char* path) {
     Serial.printf("[P5-RING] Reload trigger: %s\n", path);
@@ -171,28 +174,55 @@ static bool _try_upload_header(const char* line) {
     if (strncmp(line, "UPLOAD ", 7) != 0) return false;
     const char* p = line + 7;
     const char* sp = strchr(p, ' ');
-    if (!sp) return false;
+    if (!sp) { Serial.println("[UPLOAD] REJECTED: malformed header"); return true; }
     size_t plen = (size_t)(sp - p);
-    if (plen >= sizeof(_upload_path)) return false;
-    memcpy(_upload_path, p, plen);
-    _upload_path[plen] = '\0';
     uint32_t n = (uint32_t)atol(sp + 1);
-    if (n == 0 || n > SKETCH_SRC_MAX) return false;
+
+    bool ok = true;
+    if (plen == 0 || plen >= sizeof(_upload_path)) {
+        Serial.printf("[UPLOAD] REJECTED: path too long (max %u)\n",
+                      (unsigned)(sizeof(_upload_path) - 1));
+        ok = false;
+    }
+    if (n == 0 || n > SKETCH_SRC_MAX) {
+        Serial.printf("[UPLOAD] REJECTED: len %lu (max %d)\n",
+                      (unsigned long)n, SKETCH_SRC_MAX);
+        ok = false;
+    }
+    if (ok) {
+        memcpy(_upload_path, p, plen);
+        _upload_path[plen] = '\0';
+        Serial.printf("[UPLOAD] receiving %lu bytes -> %s\n", (unsigned long)n, _upload_path);
+    }
+    // Enter upload mode even on rejection: the host streams the body
+    // regardless, and without this every body line gets parsed as a serial
+    // command (`bright`, `sketch use`, ... inside sketch text would execute).
     _uploading      = true;
+    _upload_discard = !ok;
     _upload_remain  = n;
     _upload_written = 0;
-    Serial.printf("[UPLOAD] receiving %lu bytes -> %s\n", (unsigned long)n, _upload_path);
+    _upload_last_ms = millis();
     return true;
 }
 
 static void _serial_tick() {
+    // Host died mid-upload? Abort so the command channel doesn't stay wedged.
+    if (_uploading && millis() - _upload_last_ms > 2000) {
+        Serial.printf("[UPLOAD] TIMEOUT after %lu bytes — aborted\n",
+                      (unsigned long)_upload_written);
+        _uploading      = false;
+        _upload_discard = false;
+        _serial_len     = 0;
+    }
+
     while (Serial.available()) {
         char c = (char)Serial.read();
 
         // Mid-upload: consume raw bytes
         if (_uploading) {
+            _upload_last_ms = millis();
             if (_upload_remain > 0) {
-                _upload_buf[_upload_written++] = c;
+                if (!_upload_discard) _upload_buf[_upload_written++] = c;
                 _upload_remain--;
                 if (_upload_remain == 0) {
                     Serial.println("[UPLOAD] body complete, waiting for END");
@@ -203,15 +233,20 @@ static void _serial_tick() {
             if (_serial_len < sizeof(_serial_buf) - 1) _serial_buf[_serial_len++] = c;
             _serial_buf[_serial_len] = '\0';
             if (strstr(_serial_buf, "END") != nullptr) {
-                int rc = sketch_loader_write(_upload_path, _upload_buf, _upload_written);
-                if (rc < 0) {
-                    Serial.printf("[UPLOAD] FAIL writing %s\n", _upload_path);
+                if (_upload_discard) {
+                    Serial.println("[UPLOAD] rejected body discarded");
                 } else {
-                    Serial.printf("[UPLOAD] OK %d bytes -> %s\n", rc, _upload_path);
-                    if (strcmp(_upload_path, SKETCH_PATH) == 0) sketch_loader_force_reload();
+                    int rc = sketch_loader_write(_upload_path, _upload_buf, _upload_written);
+                    if (rc < 0) {
+                        Serial.printf("[UPLOAD] FAIL writing %s\n", _upload_path);
+                    } else {
+                        Serial.printf("[UPLOAD] OK %d bytes -> %s\n", rc, _upload_path);
+                        if (strcmp(_upload_path, SKETCH_PATH) == 0) sketch_loader_force_reload();
+                    }
                 }
-                _uploading = false;
-                _serial_len = 0;
+                _uploading      = false;
+                _upload_discard = false;
+                _serial_len     = 0;
             }
             continue;
         }
@@ -280,10 +315,20 @@ void setup() {
     Serial.println("[P5-RING]   -> ok"); Serial.flush();
 
 #if !P5RING_SAFE_MODE
+    // A sketch stuck in while(true) stalls loop() forever — serial dies and
+    // every reboot re-enters the hang, the one way a bad sketch used to
+    // permanently wedge the device. The hardware watchdog (fed in loop())
+    // reboots out of the hang, and watchdog_enable_caused_reboot() tells the
+    // next boot to keep current.js parked so the device comes up responsive.
+    bool wdt_fired = watchdog_enable_caused_reboot();
+    rp2040.wdt_begin(8000);
+
     Serial.println("[P5-RING] step E: sketch_vm_init()"); Serial.flush();
     sketch_vm_init();
     Serial.println("[P5-RING] step F: sketch_vm_load()"); Serial.flush();
-    if (sketch_vm_load(SKETCH_PATH) == 0) {
+    if (wdt_fired) {
+        Serial.println("[P5-RING] Watchdog reboot — sketch disabled this boot ('sketch reload' to retry)");
+    } else if (sketch_vm_load(SKETCH_PATH) == 0) {
         Serial.printf("[P5-RING] Sketch loaded: %s\n", SKETCH_PATH);
     } else {
         Serial.println("[P5-RING] No valid sketch — fallback face active");
@@ -295,6 +340,7 @@ void setup() {
 }
 
 void loop() {
+    rp2040.wdt_reset();
     uint32_t now = millis();
 
     imu_tick();

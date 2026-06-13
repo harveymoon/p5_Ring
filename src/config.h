@@ -27,7 +27,12 @@
 #define PIN_IMU_SCL  7
 
 // --- Animation ---
+// Overridable from platformio.ini build_flags (-DTARGET_FPS=N). 30 is the
+// tested cap: the SPI blit alone is ~15 ms/frame, so heavier sketches never
+// reach it and the budget only gates light ones.
+#ifndef TARGET_FPS
 #define TARGET_FPS      30
+#endif
 #define FRAME_BUDGET_MS (1000 / TARGET_FPS)
 
 // --- Sketch runner ---
