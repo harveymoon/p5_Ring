@@ -4,8 +4,9 @@ A pocket-sized creative coding canvas — a **240×240 round LCD** that runs you
 own p5-flavored JavaScript sketches, live-reloads from your browser, and falls
 back to a friendly animated face when nothing else is loaded. ✨
 
-Built on a Waveshare RP2040-LCD-1.28 (Raspberry Pi RP2040 + GC9A01 round
-display + QMI8658 IMU). USB-powered, no batteries, no cloud.
+Built on a [Waveshare RP2040-LCD-1.28](https://www.waveshare.com/rp2040-lcd-1.28.htm)
+(Raspberry Pi RP2040 + GC9A01 round display + QMI8658 IMU). USB-powered, no
+batteries, no cloud.
 
 > _Plug it in, open a tab, write code, watch the screen react to gravity._  💙
 
