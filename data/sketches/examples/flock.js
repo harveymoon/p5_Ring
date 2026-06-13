@@ -1,19 +1,22 @@
 // flock.js — murmuration. Tilt steers the whole flock.
-// Ghost cohesion (k=0.010) pulls birds together toward a Lissajous target.
-// Centroid repulsion (k=0.006) pushes them away from the flock's own center.
-// The two forces balance into a loose, self-maintaining cloud — no rigid slots.
+//
+// Each bird homes toward its OWN offset slot near a drifting Lissajous target,
+// so the flock is a loose cloud of distinct birds instead of one dot. The slot
+// cloud slowly rotates (a gentle swirl) and every bird gets an independent
+// per-frame random kick, so no two birds move alike and they never collapse
+// onto the same point.
 
 let N = 14;
 let xs  = [0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 let ys  = [0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 let vxs = [0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 let vys = [0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+let oxs = [0,0,0,0,0,0,0,0,0,0,0,0,0,0];   // per-bird offset from the flock target
+let oys = [0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 
-let _gxB  = 120;
-let _gyB  = 120;
+let _gxB = 120;
+let _gyB = 120;
 let _gTick = 0;
-let _cmx  = 120;
-let _cmy  = 120;
 
 function setup() {
   noAutoRotate();
@@ -23,6 +26,9 @@ function setup() {
     ys[i]  = 70 + random(100);
     vxs[i] = random(-1, 1);
     vys[i] = random(-1, 1);
+    // Unique slot in the cloud — this is what keeps the birds apart.
+    oxs[i] = random(-45, 45);
+    oys[i] = random(-45, 45);
   }
 }
 
@@ -41,6 +47,11 @@ function draw() {
   let gx = _gxB + aY * 30;
   let gy = _gyB + aX * 30;
 
+  // Rotate the whole slot cloud a touch each frame so the formation swirls
+  // instead of flying around as a frozen blob. Computed once, used by all birds.
+  let rc = cos(0.012);
+  let rs = sin(0.012);
+
   _sk(themeR, themeG, themeB);
   _sw(2);
 
@@ -51,16 +62,23 @@ function draw() {
   let yi;
   let vxi;
   let vyi;
-  let sumX = 0;
-  let sumY = 0;
+  let oxi;
+  let oyi;
   for (i = 0; i < N; i = i + 1) {
     xi  = xs[i];
     yi  = ys[i];
     vxi = vxs[i];
     vyi = vys[i];
 
-    ax = (gx - xi) * 0.010 + (xi - _cmx) * 0.006 + aY * 0.08;
-    ay = (gy - yi) * 0.010 + (yi - _cmy) * 0.006 + aX * 0.08;
+    // Advance this bird's slot by the shared rotation.
+    oxi = oxs[i];
+    oyi = oys[i];
+    oxs[i] = oxi * rc - oyi * rs;
+    oys[i] = oxi * rs + oyi * rc;
+
+    // Home toward (target + own slot), + tilt drift, + independent jitter.
+    ax = (gx + oxs[i] - xi) * 0.011 + aY * 0.08 + random(-0.7, 0.7);
+    ay = (gy + oys[i] - yi) * 0.011 + aX * 0.08 + random(-0.7, 0.7);
 
     vxi = (vxi + ax) * 0.92;
     vyi = (vyi + ay) * 0.92;
@@ -78,11 +96,6 @@ function draw() {
     vxs[i] = vxi;
     vys[i] = vyi;
 
-    sumX = sumX + xi;
-    sumY = sumY + yi;
-
     _ln(xi, yi, xi + vxi * 3, yi + vyi * 3);
   }
-  _cmx = sumX * 0.0715;
-  _cmy = sumY * 0.0715;
 }
