@@ -118,6 +118,9 @@
   .btn.primary:hover { background: #80d3ff; border-color: #80d3ff; }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  a.btn { display: inline-block; text-decoration: none; }
+  ol.update-steps { margin: 12px 0 8px; padding-left: 22px; line-height: 1.7; }
+  ol.update-steps li { margin-bottom: 4px; }
   select.btn { background: var(--bg-input); appearance: none; padding-right: 32px;
     background-image: linear-gradient(45deg, transparent 50%, var(--ink-dim) 50%),
                       linear-gradient(135deg, var(--ink-dim) 50%, transparent 50%);
@@ -557,6 +560,21 @@ function draw() {
         <li><strong>Sketch shows nothing / wrong colors</strong> — check the Live log for <code>[VM] ERROR</code> lines. The most recent error is also on the device at <code>/sketches/.errors/last.log</code>.</li>
       </ul>
 
+    </div>
+
+    <div class="card">
+      <h2>Firmware update</h2>
+      <p>Update the device's firmware in two steps — no driver, no command line, no button-pressing. Needs Chrome or Edge.</p>
+      <div class="btn-row">
+        <a class="btn primary" href="https://github.com/harveymoon/p5_Ring/releases/latest/download/p5-ring-firmware.uf2" download>⬇ Download firmware (.uf2)</a>
+        <button class="btn" id="enter-update">Put device in update mode</button>
+      </div>
+      <ol class="update-steps">
+        <li><strong>Download</strong> the firmware <code>.uf2</code> with the button above (it also lives on the <a href="https://github.com/harveymoon/p5_Ring/releases/latest" target="_blank" rel="noopener">Releases page</a>).</li>
+        <li>Click <strong>Put device in update mode</strong>. The screen goes dark and the device reappears as a USB drive named <code>RPI-RP2</code>.</li>
+        <li><strong>Drag the downloaded <code>.uf2</code> onto the <code>RPI-RP2</code> drive.</strong> It copies across, the device reboots itself, and the new firmware is live.</li>
+      </ol>
+      <p>Prefer the old-school way? Hold the <strong>BOOTSEL</strong> button while plugging in USB to reach the same <code>RPI-RP2</code> drive — both routes end at the same drag-and-drop.</p>
     </div>
 
     <div class="card">
@@ -1147,6 +1165,60 @@ async function disconnectDevice() {
   log('device disconnected');
 }
 
+// Reboot the device into its UF2 bootloader (the RPI-RP2 mass-storage drive)
+// via the RP2040 "1200-baud touch": open the CDC port at 1200 bps and drop DTR.
+// The firmware's checkSerialReset() fires on (bps==1200 && !dtr) and calls
+// reset_usb_boot(). WebSerial can trigger this but can't write to a mass-storage
+// drive, so the user drags the .uf2 onto RPI-RP2 to finish the flash.
+async function enterUpdateMode() {
+  if (!HAS_SERIAL) {
+    log('this browser has no WebSerial — use the manual BOOTSEL-button method instead', 'err');
+    return;
+  }
+  const btn = document.getElementById('enter-update');
+  btn.disabled = true;
+
+  // Step 1: get a port. A cancelled picker (or no device) is the only real
+  // failure here — report it and stop.
+  let p = null;
+  try {
+    p = port;
+    if (p) {
+      // Tear down our 115200 session so we can reopen the same port at 1200.
+      readLoopAbort = true;
+      if (reader) await reader.cancel().catch(()=>{});
+      if (writer) { try { writer.releaseLock(); } catch {} }
+      await port.close().catch(()=>{});
+      writer = null; reader = null; port = null;
+      setConnected(false);
+    } else {
+      // Not connected — ask for the device (this click is the user gesture
+      // requestPort needs, so don't await anything before it).
+      p = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x2E8A }] });
+    }
+  } catch (e) {
+    if (e.name !== 'NotFoundError') log(`update mode: ${e.message}`, 'err');
+    btn.disabled = false;
+    return;
+  }
+
+  // Step 2: the 1200-baud touch. The device resets to its bootloader the
+  // instant DTR drops, so it falls off USB mid-call — open()/setSignals()/
+  // close() routinely throw here EVEN ON SUCCESS. Swallow those: the reset
+  // firing is exactly what we want, and the user verifies via the drive.
+  try {
+    await p.open({ baudRate: 1200 });
+    await p.setSignals({ dataTerminalReady: true });
+    await new Promise(r => setTimeout(r, 120));
+    await p.setSignals({ dataTerminalReady: false });
+    await new Promise(r => setTimeout(r, 120));
+    await p.close();
+  } catch (e) { /* expected — device vanished as it rebooted into BOOTSEL */ }
+
+  log('update mode triggered — look for an "RPI-RP2" drive, then drag the downloaded firmware .uf2 onto it. (No drive? Hold BOOTSEL while replugging.)', 'ok');
+  btn.disabled = false;
+}
+
 async function readLoop() {
   const dec = new TextDecoder();
   let buf = '';
@@ -1213,6 +1285,7 @@ async function uploadToDevice(devicePath, text) {
 
 document.getElementById('connect').onclick    = connectDevice;
 document.getElementById('disconnect').onclick = disconnectDevice;
+document.getElementById('enter-update').onclick = enterUpdateMode;
 
 const cmdInput = document.getElementById('cmd');
 async function submitCmd() {
