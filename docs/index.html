@@ -469,7 +469,22 @@
   <!-- =================== HELP =================== -->
   <div class="tab-panel help" id="tab-help">
     <div class="card">
-      <h2>Getting started</h2>
+      <h2>Step 1 — Get the firmware on the device</h2>
+      <p>A new (or freshly wiped) device needs the p5-ring firmware before it can run sketches. This is also how you update later. No driver, no command line, no button-pressing — just Chrome or Edge.</p>
+      <div class="btn-row">
+        <a class="btn primary" href="https://github.com/harveymoon/p5_Ring/releases/latest/download/p5-ring-firmware.uf2" download>⬇ Download firmware (.uf2)</a>
+        <button class="btn" id="enter-update">Put device in update mode</button>
+      </div>
+      <ol class="update-steps">
+        <li><strong>Download</strong> the firmware <code>.uf2</code> with the button above (it also lives on the <a href="https://github.com/harveymoon/p5_Ring/releases/latest" target="_blank" rel="noopener">Releases page</a>).</li>
+        <li>Click <strong>Put device in update mode</strong>. The screen goes dark and the device reappears as a USB drive named <code>RPI-RP2</code>.</li>
+        <li><strong>Drag the downloaded <code>.uf2</code> onto the <code>RPI-RP2</code> drive.</strong> It copies across, the device reboots itself, and the firmware is live.</li>
+      </ol>
+      <p>Prefer the old-school way? Hold the <strong>BOOTSEL</strong> button while plugging in USB to reach the same <code>RPI-RP2</code> drive — both routes end at the same drag-and-drop. Already running p5-ring? Skip to Step 2.</p>
+    </div>
+
+    <div class="card">
+      <h2>Step 2 — Run a sketch</h2>
       <p>Plug p5-ring into a USB-C port. Then:</p>
       <ul>
         <li><strong>Load a sketch</strong> — pick an example from the dropdown, or open any <code>.js</code> file from your computer.</li>
@@ -560,21 +575,6 @@ function draw() {
         <li><strong>Sketch shows nothing / wrong colors</strong> — check the Live log for <code>[VM] ERROR</code> lines. The most recent error is also on the device at <code>/sketches/.errors/last.log</code>.</li>
       </ul>
 
-    </div>
-
-    <div class="card">
-      <h2>Firmware update</h2>
-      <p>Update the device's firmware in two steps — no driver, no command line, no button-pressing. Needs Chrome or Edge.</p>
-      <div class="btn-row">
-        <a class="btn primary" href="https://github.com/harveymoon/p5_Ring/releases/latest/download/p5-ring-firmware.uf2" download>⬇ Download firmware (.uf2)</a>
-        <button class="btn" id="enter-update">Put device in update mode</button>
-      </div>
-      <ol class="update-steps">
-        <li><strong>Download</strong> the firmware <code>.uf2</code> with the button above (it also lives on the <a href="https://github.com/harveymoon/p5_Ring/releases/latest" target="_blank" rel="noopener">Releases page</a>).</li>
-        <li>Click <strong>Put device in update mode</strong>. The screen goes dark and the device reappears as a USB drive named <code>RPI-RP2</code>.</li>
-        <li><strong>Drag the downloaded <code>.uf2</code> onto the <code>RPI-RP2</code> drive.</strong> It copies across, the device reboots itself, and the new firmware is live.</li>
-      </ol>
-      <p>Prefer the old-school way? Hold the <strong>BOOTSEL</strong> button while plugging in USB to reach the same <code>RPI-RP2</code> drive — both routes end at the same drag-and-drop.</p>
     </div>
 
     <div class="card">
