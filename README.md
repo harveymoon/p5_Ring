@@ -40,6 +40,25 @@ no clone, no install, no CLI required.
 
 ---
 
+## 📦 Install the firmware (no tools needed)
+
+You don't need to compile anything — grab the ready-made files from the
+**[Releases page](https://github.com/harveymoon/p5_Ring/releases/latest)**:
+
+1. Download **`p5-ring-firmware.uf2`**.
+2. Hold the **BOOTSEL** button on the back of the board while plugging the
+   USB cable in. A drive called **`RPI-RP2`** appears on your computer.
+3. Drag `p5-ring-firmware.uf2` onto that drive. The device reboots into
+   p5-ring all by itself — you'll see the animated face.
+4. *(Optional)* To preload all the built-in example sketches, repeat steps
+   2–3 with **`p5-ring-examples.uf2`**. You can skip this: the
+   [companion](https://harveymoon.github.io/p5_Ring/) has every example baked
+   in and can push them over USB whenever you like.
+
+That's it. Open the companion app above and start playing. 🎉
+
+---
+
 ## 📁 What's on the device
 
 The firmware exposes the device as a **CDC serial port** at 115200 baud. There
@@ -139,7 +158,11 @@ When the upload target matches the active sketch, the device auto-reloads.
 
 ---
 
-## 🛠 Build & flash
+## 🛠 Build & flash (from source)
+
+Only needed if you're hacking on the firmware itself — everyone else should
+use the prebuilt UF2s from the [Releases page](https://github.com/harveymoon/p5_Ring/releases/latest).
+Requires [PlatformIO](https://platformio.org/).
 
 ```
 pio run                    # compile firmware
